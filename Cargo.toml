@@ -1,0 +1,9 @@
+[package]
+name = "minecraft_server"
+version = "0.1.0"
+authors = ["Robbe Van Herck <robbe@robbevanherck.be>"]
+edition = "2018"
+
+[dependencies]
+
+rayon = "1.5.0"
