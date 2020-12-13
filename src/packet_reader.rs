@@ -1,9 +1,18 @@
 use std::net::TcpStream;
 use std::io::Read;
+use std::io::Write;
 
-use crate::packets::Packet;
-use crate::packets::LegacyPingServerbound;
+use crate::client_handler::ConnectionState;
 
+use crate::packets::ServerboundPacket;
+use crate::packets::Serverbound;
+use crate::packets::ClientboundPacket;
+use crate::packets::Clientbound;
+
+use crate::packets::legacy_ping_serverbound::LegacyPingServerboundPacket;
+use crate::packets::handshaking::HandshakingPacket;
+
+// TODO: Split packet reader into handler containing writer too
 pub struct PacketReader {
     stream: TcpStream,
 }
@@ -16,12 +25,34 @@ impl PacketReader {
         }
     }
 
-    pub fn read_packet(&mut self) -> Result<impl Packet, String> {
+    pub fn read_packet(&mut self, state: ConnectionState) -> Result<ServerboundPacket, String> {
+        match state {
+            ConnectionState::Handshaking => self.read_handshaking_packet(),
+            _ => Err(format!("Unimplemented state {:?}", state))
+        }
+    }
+
+    fn read_handshaking_packet(&mut self) -> Result<ServerboundPacket, String> {
         if self.peek_byte()? == 0xfe {
-            Ok(LegacyPingServerbound::from_reader(self)?)
+            Ok(ServerboundPacket::LegacyPing(
+                    LegacyPingServerboundPacket::from_reader(self)?
+              ))
         } else {
-            // Printing this error also removes the byte from the queue
-            Err(format!("Unimplemented packet prefix {:#x}", self.read_unsigned_byte()?))
+            let _len = self.read_varint()?;
+            let packet_id = self.read_varint()?;
+            match packet_id {
+                0x00 => Ok(ServerboundPacket::Handshaking(
+                        HandshakingPacket::from_reader(self)?
+                )),
+                x => Err(format!("Unimplemented packet {:#x}", x))
+            }
+        }
+    }
+    
+    pub fn send_packet(&mut self, packet: ClientboundPacket) -> Result<(), String> {
+        match self.stream.write_all(&packet.writer().to_bytes()[..]) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_string()),
         }
     }
 
@@ -89,7 +120,8 @@ impl PacketReader {
         let mut buf = vec![];
         let mut char_result: Option<Result<char, _>> = None;
         while char_result.is_none() || char_result.unwrap().is_err() {
-            buf.push(self.read_unsigned_short()?);
+            let s = self.read_unsigned_short()?;
+            buf.push(s);
             char_result = std::char::decode_utf16(buf.iter().cloned())
                                        .map(|r| r.map_err(|e| e.unpaired_surrogate()))
                                        .next();
@@ -97,9 +129,20 @@ impl PacketReader {
         char_result.unwrap().map_err(|e| e.to_string())
     }
 
-    pub fn read_string(&mut self, length: usize) -> Result<String, String> {
+    pub fn read_string_chars(&mut self, length: usize) -> Result<String, String> {
         (0..length).map(|_| self.read_character())
                     .collect()
+    }
+    
+    pub fn read_string(&mut self) -> Result<String, String> {
+        let len = self.read_varint()?;
+        println!("{}", len);
+        Ok(String::from_utf8(
+                (0..len).map(
+                        |_| self.read_unsigned_byte()
+                                .unwrap_or(0x3f) // '?' As replacement
+                ).collect::<Vec<u8>>())
+            .map_err(|e| e.to_string())?)
     }
 }
 

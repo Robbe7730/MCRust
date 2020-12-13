@@ -1,6 +1,7 @@
 use std::net::TcpListener;
 
 mod packet_reader;
+mod packet_writer;
 mod client_handler;
 mod packets;
 
@@ -11,6 +12,8 @@ fn main() {
                             .expect("Could not start server");
 
     for stream in listener.incoming() {
-        ClientHandler::new(stream.expect("Invalid stream")).run();
+        if let Err(x) = ClientHandler::new(stream.expect("Invalid stream")).run() {
+            println!("Stream ended: {}", x);
+        }
     }
 }

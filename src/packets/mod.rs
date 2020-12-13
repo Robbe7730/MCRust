@@ -1,8 +1,10 @@
 pub mod legacy_ping_serverbound;
 pub mod legacy_ping_clientbound;
+pub mod handshaking;
 
 use crate::packets::legacy_ping_serverbound::LegacyPingServerboundPacket;
 use crate::packets::legacy_ping_clientbound::LegacyPingClientboundPacket;
+use crate::packets::handshaking::HandshakingPacket;
 
 use crate::packet_reader::PacketReader;
 use crate::packet_writer::PacketWriter;
@@ -22,6 +24,7 @@ macro_rules! expect_equal {
 
 pub enum ServerboundPacket {
     LegacyPing(LegacyPingServerboundPacket),
+    Handshaking(HandshakingPacket),
 }
 
 pub enum ClientboundPacket {
