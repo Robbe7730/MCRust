@@ -1,25 +1,14 @@
-use crate::packets::Packet;
+use crate::packets::Serverbound;
+
+use crate::expect_equal;
 use crate::packet_reader::PacketReader;
 
-#[macro_export]
-macro_rules! expect_equal {
-    ( $actual:expr, $expected:expr ) => {
-        {
-            if ($actual != $expected) {
-                Err(format!("Expedted {} but got {}", $expected, $actual))?
-            } else {
-                $expected
-            }
-        }
-    };
+pub struct LegacyPingServerboundPacket {
+    pub hostname: String,
+    pub port: u32,
 }
 
-pub struct LegacyPingServerbound {
-    hostname: String,
-    port: u32,
-}
-
-impl Packet for LegacyPingServerbound {
+impl Serverbound for LegacyPingServerboundPacket {
     fn from_reader(reader: &mut PacketReader) -> Result<Self, String> {
         expect_equal!(reader.read_unsigned_byte().map_err(|x| x.to_string())?, 0xfe);
         expect_equal!(reader.read_unsigned_byte().map_err(|x| x.to_string())?, 0x01);
@@ -31,7 +20,6 @@ impl Packet for LegacyPingServerbound {
         let hostname_len = reader.read_unsigned_short()?;
         let hostname = reader.read_string(hostname_len.into())?;
         let port = reader.read_unsigned_int()?;
-        println!("PING @ {}:{}", hostname, port);
         Ok(Self {
             hostname: hostname,
             port: port,
