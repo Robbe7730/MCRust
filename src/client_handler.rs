@@ -1,10 +1,13 @@
 use std::net::TcpStream;
 
+use crate::structs::Chat;
+
 use crate::packet_reader::PacketReader;
 use crate::packets::ServerboundPacket;
 use crate::packets::ClientboundPacket;
 
 use crate::packets::legacy_ping_clientbound::LegacyPingClientboundPacket;
+use crate::packets::status_response::StatusResponsePacket;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ConnectionState {
@@ -58,10 +61,6 @@ impl ClientHandler {
                 println!("Legacy Ping @ {}:{}", packet.hostname, packet.port);
             },
             ServerboundPacket::Handshaking(packet) => {
-                if self.state != ConnectionState::Handshaking {
-                    return Err(format!("Only accepting Handshakes in Handshaking state, not in {:?} state", self.state));
-                }
-
                 println!("Handshake @ {}:{} version {} to state {:?}", 
                          packet.server_address, 
                          packet.server_port,
@@ -69,6 +68,17 @@ impl ClientHandler {
                          packet.next_state
                 );
                 self.state = packet.next_state;
+            },
+            ServerboundPacket::StatusRequest(_) => {
+                println!("Status Request");
+                self.send_packet(ClientboundPacket::StatusResponse(StatusResponsePacket {
+                    version_name: format!("MCRust 0.1.0"),
+                    version_protocol: 498,
+                    players_max: 37,
+                    players_curr: 13,
+                    sample: vec![],
+                    description: Chat::new(format!("Hello from Rust!")),
+                }))?;
             }
         })
     }

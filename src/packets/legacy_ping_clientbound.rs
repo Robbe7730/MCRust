@@ -24,12 +24,17 @@ impl Clientbound for LegacyPingClientboundPacket {
         let mut ret = PacketWriter::new();
         ret.add_unsigned_byte(0xff); // Kick packet
         ret.add_unsigned_short(len); // Length of remaining string
-        ret.add_string_null_terminated(&"§1".to_string());
-        ret.add_string_null_terminated(&protocol_version_string);
-        ret.add_string_null_terminated(&self.minecraft_version);
-        ret.add_string_null_terminated(&self.motd);
-        ret.add_string_null_terminated(&curr_player_count_string);
-        ret.add_string(&max_player_count_string);
+        ret.add_utf16_string(&"§1".to_string());
+        ret.add_unsigned_short(0x0000);
+        ret.add_utf16_string(&protocol_version_string);
+        ret.add_unsigned_short(0x0000);
+        ret.add_utf16_string(&self.minecraft_version);
+        ret.add_unsigned_short(0x0000);
+        ret.add_utf16_string(&self.motd);
+        ret.add_unsigned_short(0x0000);
+        ret.add_utf16_string(&curr_player_count_string);
+        ret.add_unsigned_short(0x0000);
+        ret.add_utf16_string(&max_player_count_string);
         ret
     }
 }

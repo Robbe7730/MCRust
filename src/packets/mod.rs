@@ -1,10 +1,14 @@
 pub mod legacy_ping_serverbound;
 pub mod legacy_ping_clientbound;
 pub mod handshaking;
+pub mod status_request;
+pub mod status_response;
 
 use crate::packets::legacy_ping_serverbound::LegacyPingServerboundPacket;
 use crate::packets::legacy_ping_clientbound::LegacyPingClientboundPacket;
 use crate::packets::handshaking::HandshakingPacket;
+use crate::packets::status_request::StatusRequestPacket;
+use crate::packets::status_response::StatusResponsePacket;
 
 use crate::packet_reader::PacketReader;
 use crate::packet_writer::PacketWriter;
@@ -25,10 +29,12 @@ macro_rules! expect_equal {
 pub enum ServerboundPacket {
     LegacyPing(LegacyPingServerboundPacket),
     Handshaking(HandshakingPacket),
+    StatusRequest(StatusRequestPacket),
 }
 
 pub enum ClientboundPacket {
     LegacyPing(LegacyPingClientboundPacket),
+    StatusResponse(StatusResponsePacket),
 }
 
 pub trait Serverbound {
@@ -44,6 +50,7 @@ impl Clientbound for ClientboundPacket {
     fn writer(&self) -> PacketWriter{
         match self {
             ClientboundPacket::LegacyPing(p) => p.writer(),
+            ClientboundPacket::StatusResponse(p) => p.writer(),
         }
     }
 }

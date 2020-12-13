@@ -11,6 +11,7 @@ use crate::packets::Clientbound;
 
 use crate::packets::legacy_ping_serverbound::LegacyPingServerboundPacket;
 use crate::packets::handshaking::HandshakingPacket;
+use crate::packets::status_request::StatusRequestPacket;
 
 // TODO: Split packet reader into handler containing writer too
 pub struct PacketReader {
@@ -28,6 +29,7 @@ impl PacketReader {
     pub fn read_packet(&mut self, state: ConnectionState) -> Result<ServerboundPacket, String> {
         match state {
             ConnectionState::Handshaking => self.read_handshaking_packet(),
+            ConnectionState::Status => self.read_status_packet(),
             _ => Err(format!("Unimplemented state {:?}", state))
         }
     }
@@ -46,6 +48,17 @@ impl PacketReader {
                 )),
                 x => Err(format!("Unimplemented packet {:#x}", x))
             }
+        }
+    }
+
+    fn read_status_packet(&mut self) -> Result<ServerboundPacket, String> {
+        let _len = self.read_varint()?;
+        let packet_id = self.read_varint()?;
+        match packet_id {
+            0x00 => Ok(ServerboundPacket::StatusRequest(
+                    StatusRequestPacket::from_reader(self)?
+            )),
+            x => Err(format!("Unimplemented packet {:#x}", x))
         }
     }
     
@@ -136,7 +149,6 @@ impl PacketReader {
     
     pub fn read_string(&mut self) -> Result<String, String> {
         let len = self.read_varint()?;
-        println!("{}", len);
         Ok(String::from_utf8(
                 (0..len).map(
                         |_| self.read_unsigned_byte()

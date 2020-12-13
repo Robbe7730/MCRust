@@ -4,6 +4,7 @@ mod packet_reader;
 mod packet_writer;
 mod client_handler;
 mod packets;
+mod structs;
 
 use client_handler::ClientHandler;
 
