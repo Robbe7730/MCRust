@@ -12,6 +12,7 @@ use crate::packets::Clientbound;
 use crate::packets::legacy_ping_serverbound::LegacyPingServerboundPacket;
 use crate::packets::handshaking::HandshakingPacket;
 use crate::packets::status_request::StatusRequestPacket;
+use crate::packets::ping::PingPacket;
 
 // TODO: Split packet reader into handler containing writer too
 pub struct PacketReader {
@@ -57,6 +58,9 @@ impl PacketReader {
         match packet_id {
             0x00 => Ok(ServerboundPacket::StatusRequest(
                     StatusRequestPacket::from_reader(self)?
+            )),
+            0x01 => Ok(ServerboundPacket::Ping(
+                    PingPacket::from_reader(self)?
             )),
             x => Err(format!("Unimplemented packet {:#x}", x))
         }
@@ -155,6 +159,21 @@ impl PacketReader {
                                 .unwrap_or(0x3f) // '?' As replacement
                 ).collect::<Vec<u8>>())
             .map_err(|e| e.to_string())?)
+    }
+
+    pub fn read_unsigned_long(&mut self) -> Result<u64, String> {
+        Ok(((self.read_unsigned_byte()? as u64) << 56) |
+                ((self.read_unsigned_byte()? as u64) << 48) |
+                ((self.read_unsigned_byte()? as u64) << 40) |
+                ((self.read_unsigned_byte()? as u64) << 32) |
+                ((self.read_unsigned_byte()? as u64) << 24) |
+                ((self.read_unsigned_byte()? as u64) << 16) |
+                ((self.read_unsigned_byte()? as u64) << 8) |
+                self.read_unsigned_byte()? as u64)
+    }
+
+    pub fn read_signed_long(&mut self) -> Result<i64, String> {
+        Ok(self.read_unsigned_long()? as i64)
     }
 }
 

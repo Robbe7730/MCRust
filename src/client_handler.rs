@@ -8,6 +8,7 @@ use crate::packets::ClientboundPacket;
 
 use crate::packets::legacy_ping_clientbound::LegacyPingClientboundPacket;
 use crate::packets::status_response::StatusResponsePacket;
+use crate::packets::pong::PongPacket;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ConnectionState {
@@ -78,6 +79,12 @@ impl ClientHandler {
                     players_curr: 13,
                     sample: vec![],
                     description: Chat::new(format!("Hello from Rust!")),
+                }))?;
+            },
+            ServerboundPacket::Ping(packet) => {
+                println!("Ping with payload {}", packet.payload);
+                self.send_packet(ClientboundPacket::Pong(PongPacket {
+                    payload: packet.payload
                 }))?;
             }
         })

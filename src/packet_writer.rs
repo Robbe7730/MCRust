@@ -73,4 +73,19 @@ impl PacketWriter {
         self.add_varint(value.bytes().len());
         self.add_raw_string(value);
     }
+
+    pub fn add_unsigned_long(&mut self, value: u64) {
+        self.ret.push(((value >> 56) & 0xff) as u8);
+        self.ret.push(((value >> 48) & 0xff) as u8);
+        self.ret.push(((value >> 40) & 0xff) as u8);
+        self.ret.push(((value >> 32) & 0xff) as u8);
+        self.ret.push(((value >> 24) & 0xff) as u8);
+        self.ret.push(((value >> 16) & 0xff) as u8);
+        self.ret.push(((value >> 8) & 0xff) as u8);
+        self.ret.push((value & 0xff) as u8);
+    }
+
+    pub fn add_signed_long(&mut self, value: i64) {
+        self.add_unsigned_long(value as u64);
+    }
 }
