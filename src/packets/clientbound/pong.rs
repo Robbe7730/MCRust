@@ -8,10 +8,8 @@ pub struct PongPacket {
 
 impl Clientbound for PongPacket {
     fn writer(&self) -> PacketWriter {
-        let mut writer = PacketWriter::new();
-        writer.add_unsigned_byte(0x01);
+        let mut writer = PacketWriter::new(0x01);
         writer.add_signed_long(self.payload);
-        writer.insert_length();
         writer
     }
 }

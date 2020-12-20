@@ -1,5 +1,5 @@
-use crate::packets::Clientbound;
 use crate::packet_writer::PacketWriter;
+use crate::packets::Clientbound;
 
 pub struct LegacyPingClientboundPacket {
     pub protocol_version: usize,
@@ -15,14 +15,13 @@ impl Clientbound for LegacyPingClientboundPacket {
         let protocol_version_string = format!("{}", self.protocol_version);
         let curr_player_count_string = format!("{}", self.curr_player_count);
         let max_player_count_string = format!("{}", self.max_player_count);
-        let len: u16 = (7 +
-            protocol_version_string.len() +
-            self.minecraft_version.len() + 
-            self.motd.len() + 
-            curr_player_count_string.len() +
-            max_player_count_string.len()) as u16;
-        let mut ret = PacketWriter::new();
-        ret.add_unsigned_byte(0xff); // Kick packet
+        let len: u16 = (7
+            + protocol_version_string.len()
+            + self.minecraft_version.len()
+            + self.motd.len()
+            + curr_player_count_string.len()
+            + max_player_count_string.len()) as u16;
+        let mut ret = PacketWriter::new_legacy(0xff);
         ret.add_unsigned_short(len); // Length of remaining string
         ret.add_utf16_string(&"§1".to_string());
         ret.add_unsigned_short(0x0000);
@@ -38,4 +37,3 @@ impl Clientbound for LegacyPingClientboundPacket {
         ret
     }
 }
-

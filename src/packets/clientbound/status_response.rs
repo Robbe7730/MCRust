@@ -1,7 +1,7 @@
 use crate::packets::Clientbound;
 
-use serde_json::json;
 use serde::Serialize;
+use serde_json::json;
 
 use crate::packet_writer::PacketWriter;
 use crate::structs::Chat;
@@ -24,7 +24,7 @@ pub struct StatusResponsePacket {
 
 impl Clientbound for StatusResponsePacket {
     fn writer(&self) -> PacketWriter {
-        let mut writer = PacketWriter::new();
+        let mut writer = PacketWriter::new(0x00);
         let status_json = json!({
             "version": {
                 "name": self.version_name,
@@ -36,10 +36,9 @@ impl Clientbound for StatusResponsePacket {
                 "sample": self.sample,
             },
             "description": self.description,
-        }).to_string();
-        writer.add_unsigned_byte(0x00);
+        })
+        .to_string();
         writer.add_string(&status_json);
-        writer.insert_length();
         writer
     }
 }

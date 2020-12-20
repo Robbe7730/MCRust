@@ -1,3 +1,4 @@
+// TODO: this is ugly and WIP
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -28,7 +29,7 @@ pub struct Chat {
     #[serde(skip_serializing_if = "Option::is_none")]
     hover_event: Option<Event>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra: Option<Vec<Chat>>
+    extra: Option<Vec<Chat>>,
 }
 
 impl Chat {

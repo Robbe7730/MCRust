@@ -16,6 +16,11 @@ impl Serverbound for HandshakingPacket {
         let server_address = reader.read_string()?;
         let server_port = reader.read_unsigned_short()?;
         let next_state = ConnectionState::from(reader.read_varint()?)?;
-        Ok(Self { protocol_version, server_address, server_port, next_state })
+        Ok(Self {
+            protocol_version,
+            server_address,
+            server_port,
+            next_state,
+        })
     }
 }

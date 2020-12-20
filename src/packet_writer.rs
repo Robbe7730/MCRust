@@ -1,44 +1,58 @@
+use std::io::Write;
+use std::net::TcpStream;
+use std::sync::Arc;
+use std::sync::Mutex;
+
 pub struct PacketWriter {
-    ret: Vec<u8>,
+    data: Vec<u8>,
+    include_length: bool,
 }
 
-#[allow(unused)]
 impl PacketWriter {
-    pub fn new() -> Self {
+    pub fn new(id: u8) -> Self {
         Self {
-            ret: vec![]
+            data: vec![id],
+            include_length: true,
         }
     }
 
-    pub fn to_bytes(&self) -> &Vec<u8> {
-        &self.ret
+    pub fn new_legacy(id: u8) -> Self {
+        Self {
+            data: vec![id],
+            include_length: false,
+        }
     }
 
-    pub fn insert_length(&mut self) {
-        for val in self.to_varint(self.ret.len()).iter().rev() {
-            self.ret.insert(0, *val);
+    pub fn write(&self, stream: Arc<Mutex<TcpStream>>) -> Result<(), String> {
+        let mut locked_stream = stream
+            .lock()
+            .map_err(|e| format!("Could not lock stream: {}", e.to_string()))?;
+
+        if self.include_length {
+            let mut data = self.to_varint(self.data.len());
+            data.extend(&self.data);
+            locked_stream.write(&data).map_err(|e| e.to_string())?;
+        } else {
+            locked_stream.write(&self.data).map_err(|e| e.to_string())?;
         }
+
+        Ok(())
     }
 
     pub fn add_unsigned_byte(&mut self, byte: u8) {
-        self.ret.push(byte);
-    }
-
-    pub fn add_signed_byte(&mut self, byte: i8) {
-        self.add_unsigned_byte(byte as u8);
+        self.data.push(byte);
     }
 
     pub fn add_unsigned_short(&mut self, value: u16) {
-        self.ret.push((value >> 8) as u8);
-        self.ret.push((value & 0xff) as u8);
+        self.data.push((value >> 8) as u8);
+        self.data.push((value & 0xff) as u8);
     }
 
-    pub fn add_signed_short(&mut self, signed_value: i16) {
-        self.add_unsigned_short(signed_value as u16);
-    }
 
     pub fn add_utf16_string(&mut self, value: &String) {
-        value.encode_utf16().for_each(|x| self.add_unsigned_short(x));
+        value
+            .encode_utf16()
+            .for_each(|x| self.add_unsigned_short(x));
     }
 
     pub fn add_raw_string(&mut self, value: &String) {
@@ -58,9 +72,8 @@ impl PacketWriter {
             if mut_value == 0 {
                 break;
             }
-        } 
+        }
         ret
-
     }
 
     pub fn add_varint(&mut self, value: usize) {
@@ -68,21 +81,21 @@ impl PacketWriter {
             self.add_unsigned_byte(val);
         }
     }
-    
+
     pub fn add_string(&mut self, value: &String) {
         self.add_varint(value.bytes().len());
         self.add_raw_string(value);
     }
 
     pub fn add_unsigned_long(&mut self, value: u64) {
-        self.ret.push(((value >> 56) & 0xff) as u8);
-        self.ret.push(((value >> 48) & 0xff) as u8);
-        self.ret.push(((value >> 40) & 0xff) as u8);
-        self.ret.push(((value >> 32) & 0xff) as u8);
-        self.ret.push(((value >> 24) & 0xff) as u8);
-        self.ret.push(((value >> 16) & 0xff) as u8);
-        self.ret.push(((value >> 8) & 0xff) as u8);
-        self.ret.push((value & 0xff) as u8);
+        self.data.push(((value >> 56) & 0xff) as u8);
+        self.data.push(((value >> 48) & 0xff) as u8);
+        self.data.push(((value >> 40) & 0xff) as u8);
+        self.data.push(((value >> 32) & 0xff) as u8);
+        self.data.push(((value >> 24) & 0xff) as u8);
+        self.data.push(((value >> 16) & 0xff) as u8);
+        self.data.push(((value >> 8) & 0xff) as u8);
+        self.data.push((value & 0xff) as u8);
     }
 
     pub fn add_signed_long(&mut self, value: i64) {
