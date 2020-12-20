@@ -13,25 +13,27 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 
-pub struct ServerStatus {
+pub struct ServerSettings {
     version: String,
     protocol_version: usize,
     max_players: usize,
     motd: String,
+    online: bool,
 }
 
 pub struct Server {
-    status: ServerStatus,
+    settings: ServerSettings,
 }
 
 impl Server {
     pub fn new() -> Self {
         Server {
-            status: ServerStatus {
+            settings: ServerSettings {
                 version: format!("MCRust 0.1.0"),
                 protocol_version: 498,
                 max_players: 20,
                 motd: format!("Hello from Rust"),
+                online: false,
             },
         }
     }

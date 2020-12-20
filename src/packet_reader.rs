@@ -21,6 +21,7 @@ impl PacketReader {
         match state {
             ConnectionState::Handshaking => self.read_handshaking_packet(),
             ConnectionState::Status => self.read_status_packet(),
+            ConnectionState::Login => self.read_login_packet(),
             _ => Err(ErrorType::Fatal(format!("Unimplemented state {:?}", state))),
         }
     }
@@ -53,6 +54,20 @@ impl PacketReader {
                 StatusRequestPacket::from_reader(self)?,
             )),
             0x01 => Ok(ServerboundPacket::Ping(PingPacket::from_reader(self)?)),
+            x => Err(ErrorType::Recoverable(format!(
+                "Unimplemented packet {}",
+                x
+            ))),
+        }
+    }
+
+    fn read_login_packet(&mut self) -> Result<ServerboundPacket, ErrorType> {
+        let _len = self.read_varint()?;
+        let packet_id = self.read_varint()?;
+        match packet_id {
+            0x00 => Ok(ServerboundPacket::LoginStart(
+                    LoginStartPacket::from_reader(self)?
+            )),
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet {}",
                 x

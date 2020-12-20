@@ -14,6 +14,7 @@ pub enum ConnectionState {
     Handshaking = 0,
     Status = 1,
     Login = 2,
+    Play = 3,
 }
 
 impl ConnectionState {
@@ -22,6 +23,7 @@ impl ConnectionState {
             0 => Ok(ConnectionState::Handshaking),
             1 => Ok(ConnectionState::Status),
             2 => Ok(ConnectionState::Login),
+            3 => Ok(ConnectionState::Play),
             x => Err(ErrorType::Fatal(format!("Invalid state {}", x))),
         }
     }
@@ -81,6 +83,7 @@ impl ClientHandler {
     }
 
     fn handle_packet(&mut self, packet: ServerboundPacket) -> Result<(), ErrorType> {
+        // read_packet has already filtered out incorrect states, so it is not neccesary here
         Ok(match packet {
             ServerboundPacket::LegacyPing(packet) => {
                 println!("Legacy Ping @ {}:{}", packet.hostname, packet.port);
@@ -90,11 +93,11 @@ impl ClientHandler {
                         ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
                     })?;
                     packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
-                        protocol_version: server_lock.status.protocol_version,
-                        minecraft_version: server_lock.status.version.to_string(),
-                        motd: server_lock.status.motd.to_string(),
+                        protocol_version: server_lock.settings.protocol_version,
+                        minecraft_version: server_lock.settings.version.to_string(),
+                        motd: server_lock.settings.motd.to_string(),
                         curr_player_count: 0,
-                        max_player_count: server_lock.status.max_players,
+                        max_player_count: server_lock.settings.max_players,
                     })
                 }
                 self.send_packet(packet)?;
@@ -118,12 +121,12 @@ impl ClientHandler {
                         ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
                     })?;
                     packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
-                        version_name: server_lock.status.version.to_string(),
-                        version_protocol: server_lock.status.protocol_version,
-                        players_max: server_lock.status.max_players,
+                        version_name: server_lock.settings.version.to_string(),
+                        version_protocol: server_lock.settings.protocol_version,
+                        players_max: server_lock.settings.max_players,
                         players_curr: 0,
                         sample: vec![],
-                        description: Chat::new(server_lock.status.motd.to_string()),
+                        description: Chat::new(server_lock.settings.motd.to_string()),
                     })
                 }
                 self.send_packet(packet)?;
@@ -134,6 +137,22 @@ impl ClientHandler {
                     payload: packet.payload,
                 }))?;
                 Err(ErrorType::GracefulExit)?
+            }
+            ServerboundPacket::LoginStart(packet) => {
+                println!("Login start from {}", packet.username);
+                let online;
+                {
+                    let server_lock = self.server.lock().map_err(|e| {
+                        ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
+                    })?;
+                    online = server_lock.settings.online;
+                }
+                if online {
+                    Err(ErrorType::Fatal(format!("Online mode is not implemented")))?
+                } else {
+                    self.send_packet(ClientboundPacket::LoginSuccess(LoginSuccessPacket::new(packet.username)))?;
+                }
+                self.state = ConnectionState::Play;
             }
         })
     }

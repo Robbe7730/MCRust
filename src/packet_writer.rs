@@ -5,6 +5,8 @@ use std::sync::Mutex;
 
 use crate::error_type::ErrorType;
 
+use uuid::Uuid;
+
 pub struct PacketWriter {
     data: Vec<u8>,
     include_length: bool,
@@ -13,7 +15,7 @@ pub struct PacketWriter {
 impl PacketWriter {
     pub fn new(id: u8) -> Self {
         Self {
-            data: vec![id],
+            data: Self::to_varint(id.into()),
             include_length: true,
         }
     }
@@ -31,7 +33,7 @@ impl PacketWriter {
             .map_err(|e| ErrorType::Fatal(format!("Could not lock stream: {}", e.to_string())))?;
 
         if self.include_length {
-            let mut data = self.to_varint(self.data.len());
+            let mut data = Self::to_varint(self.data.len());
             data.extend(&self.data);
             locked_stream
                 .write(&data)
@@ -64,7 +66,7 @@ impl PacketWriter {
         value.bytes().for_each(|x| self.add_unsigned_byte(x));
     }
 
-    fn to_varint(&self, value: usize) -> Vec<u8> {
+    fn to_varint(value: usize) -> Vec<u8> {
         let mut mut_value = value;
         let mut ret = vec![];
         loop {
@@ -82,7 +84,7 @@ impl PacketWriter {
     }
 
     pub fn add_varint(&mut self, value: usize) {
-        for val in self.to_varint(value) {
+        for val in Self::to_varint(value) {
             self.add_unsigned_byte(val);
         }
     }
@@ -105,5 +107,11 @@ impl PacketWriter {
 
     pub fn add_signed_long(&mut self, value: i64) {
         self.add_unsigned_long(value as u64);
+    }
+
+    pub fn add_uuid(&mut self, value: Uuid) {
+        for &byte in value.as_bytes().iter().rev() {
+            self.add_unsigned_byte(byte);
+        }
     }
 }
