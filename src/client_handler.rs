@@ -2,6 +2,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crate::error_type::ErrorType;
 use crate::packet_reader::PacketReader;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
@@ -15,12 +16,12 @@ pub enum ConnectionState {
 }
 
 impl ConnectionState {
-    pub fn from(i: isize) -> Result<Self, String> {
+    pub fn from(i: isize) -> Result<Self, ErrorType> {
         match i {
             0 => Ok(ConnectionState::Handshaking),
             1 => Ok(ConnectionState::Status),
             2 => Ok(ConnectionState::Login),
-            x => Err(format!("Invalid state {}", x)),
+            x => Err(ErrorType::Fatal(format!("Invalid state {}", x))),
         }
     }
 }
@@ -41,19 +42,42 @@ impl ClientHandler {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), String> {
+    pub fn run(&mut self) {
         println!("RUN!");
         loop {
-            let packet = self.reader.read_packet(self.state)?;
-            self.handle_packet(packet)?;
+            let packet_result = self
+                .reader
+                .read_packet(self.state)
+                .and_then(|packet| self.handle_packet(packet));
+            match packet_result {
+                Ok(_) => println!("Another succesful packet handled"),
+                Err(ErrorType::Fatal(msg)) => {
+                    println!("FATAL: {}", msg);
+                    self.graceful_exit();
+                    break;
+                }
+                Err(ErrorType::Recoverable(msg)) => {
+                    println!("Whoops: {}", msg);
+                }
+                Err(ErrorType::GracefulExit) => {
+                    self.graceful_exit();
+                    break;
+                }
+            }
         }
     }
 
-    pub fn send_packet(&mut self, packet: ClientboundPacket) -> Result<(), String> {
+    fn graceful_exit(&mut self) {
+        // The connection is closed when it goes out of scope, so for now nothing needs to be done
+        // here
+        println!("Going down");
+    }
+
+    pub fn send_packet(&mut self, packet: ClientboundPacket) -> Result<(), ErrorType> {
         packet.writer().write(self.stream.clone())
     }
 
-    fn handle_packet(&mut self, packet: ServerboundPacket) -> Result<(), String> {
+    fn handle_packet(&mut self, packet: ServerboundPacket) -> Result<(), ErrorType> {
         Ok(match packet {
             ServerboundPacket::LegacyPing(packet) => {
                 println!("Legacy Ping @ {}:{}", packet.hostname, packet.port);
@@ -65,6 +89,7 @@ impl ClientHandler {
                     curr_player_count: 13,
                     max_player_count: 37,
                 }))?;
+                Err(ErrorType::GracefulExit)?
             }
             ServerboundPacket::Handshaking(packet) => {
                 println!(
@@ -93,6 +118,7 @@ impl ClientHandler {
                 self.send_packet(ClientboundPacket::Pong(PongPacket {
                     payload: packet.payload,
                 }))?;
+                Err(ErrorType::GracefulExit)?
             }
         })
     }

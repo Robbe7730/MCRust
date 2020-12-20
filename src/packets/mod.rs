@@ -8,7 +8,7 @@ use serverbound::*;
 macro_rules! expect_equal {
     ( $actual:expr, $expected:expr ) => {{
         if ($actual != $expected) {
-            Err(format!("Expedted {} but got {}", $expected, $actual))?
+            Err(ErrorType::Fatal(format!("Expected {} but got {}", $expected, $actual)))?
         } else {
             $expected
         }

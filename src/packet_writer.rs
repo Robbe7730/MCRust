@@ -3,6 +3,8 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crate::error_type::ErrorType;
+
 pub struct PacketWriter {
     data: Vec<u8>,
     include_length: bool,
@@ -23,17 +25,21 @@ impl PacketWriter {
         }
     }
 
-    pub fn write(&self, stream: Arc<Mutex<TcpStream>>) -> Result<(), String> {
+    pub fn write(&self, stream: Arc<Mutex<TcpStream>>) -> Result<(), ErrorType> {
         let mut locked_stream = stream
             .lock()
-            .map_err(|e| format!("Could not lock stream: {}", e.to_string()))?;
+            .map_err(|e| ErrorType::Fatal(format!("Could not lock stream: {}", e.to_string())))?;
 
         if self.include_length {
             let mut data = self.to_varint(self.data.len());
             data.extend(&self.data);
-            locked_stream.write(&data).map_err(|e| e.to_string())?;
+            locked_stream
+                .write(&data)
+                .map_err(|e| ErrorType::Fatal(e.to_string()))?;
         } else {
-            locked_stream.write(&self.data).map_err(|e| e.to_string())?;
+            locked_stream
+                .write(&self.data)
+                .map_err(|e| ErrorType::Fatal(e.to_string()))?;
         }
 
         Ok(())
@@ -47,7 +53,6 @@ impl PacketWriter {
         self.data.push((value >> 8) as u8);
         self.data.push((value & 0xff) as u8);
     }
-
 
     pub fn add_utf16_string(&mut self, value: &String) {
         value

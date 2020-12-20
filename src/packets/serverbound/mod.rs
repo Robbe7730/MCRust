@@ -9,6 +9,7 @@ pub use ping::*;
 pub use status_request::*;
 
 use crate::packet_reader::PacketReader;
+use crate::error_type::ErrorType;
 
 pub enum ServerboundPacket {
     LegacyPing(LegacyPingServerboundPacket),
@@ -18,7 +19,7 @@ pub enum ServerboundPacket {
 }
 
 pub trait Serverbound {
-    fn from_reader(reader: &mut PacketReader) -> Result<Self, String>
+    fn from_reader(reader: &mut PacketReader) -> Result<Self, ErrorType>
     where
         Self: Sized;
 }
