@@ -7,6 +7,7 @@ use crate::packet_reader::PacketReader;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::structs::Chat;
+use crate::Server;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ConnectionState {
@@ -30,15 +31,17 @@ pub struct ClientHandler {
     stream: Arc<Mutex<TcpStream>>,
     state: ConnectionState,
     reader: PacketReader,
+    server: Arc<Mutex<Server>>,
 }
 
 impl ClientHandler {
-    pub fn new(stream: TcpStream) -> Self {
+    pub fn new(stream: TcpStream, server: Arc<Mutex<Server>>) -> Self {
         let stream = Arc::new(Mutex::new(stream));
         Self {
             stream: stream.clone(),
             state: ConnectionState::Handshaking,
             reader: PacketReader::new(stream.clone()),
+            server: server,
         }
     }
 
@@ -81,14 +84,20 @@ impl ClientHandler {
         Ok(match packet {
             ServerboundPacket::LegacyPing(packet) => {
                 println!("Legacy Ping @ {}:{}", packet.hostname, packet.port);
-                //TODO: un-hardcode this data
-                self.send_packet(ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
-                    protocol_version: 127,
-                    minecraft_version: "1.14.4".to_string(),
-                    motd: "Hello from Rust!".to_string(),
-                    curr_player_count: 13,
-                    max_player_count: 37,
-                }))?;
+                let packet;
+                {
+                    let server_lock = self.server.lock().map_err(|e| {
+                        ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
+                    })?;
+                    packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
+                        protocol_version: server_lock.status.protocol_version,
+                        minecraft_version: server_lock.status.version.to_string(),
+                        motd: server_lock.status.motd.to_string(),
+                        curr_player_count: 0,
+                        max_player_count: server_lock.status.max_players,
+                    })
+                }
+                self.send_packet(packet)?;
                 Err(ErrorType::GracefulExit)?
             }
             ServerboundPacket::Handshaking(packet) => {
@@ -103,15 +112,21 @@ impl ClientHandler {
             }
             ServerboundPacket::StatusRequest(_) => {
                 println!("Status Request");
-                //TODO: un-hardcode this data
-                self.send_packet(ClientboundPacket::StatusResponse(StatusResponsePacket {
-                    version_name: format!("MCRust 0.1.0"),
-                    version_protocol: 498,
-                    players_max: 37,
-                    players_curr: 13,
-                    sample: vec![],
-                    description: Chat::new(format!("Hello from Rust!")),
-                }))?;
+                let packet;
+                {
+                    let server_lock = self.server.lock().map_err(|e| {
+                        ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
+                    })?;
+                    packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
+                        version_name: server_lock.status.version.to_string(),
+                        version_protocol: server_lock.status.protocol_version,
+                        players_max: server_lock.status.max_players,
+                        players_curr: 0,
+                        sample: vec![],
+                        description: Chat::new(server_lock.status.motd.to_string()),
+                    })
+                }
+                self.send_packet(packet)?;
             }
             ServerboundPacket::Ping(packet) => {
                 println!("Ping with payload {}", packet.payload);

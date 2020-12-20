@@ -37,7 +37,10 @@ impl PacketReader {
                 0x00 => Ok(ServerboundPacket::Handshaking(
                     HandshakingPacket::from_reader(self)?,
                 )),
-                x => Err(ErrorType::Recoverable(format!("Unimplemented packet {}", x))),
+                x => Err(ErrorType::Recoverable(format!(
+                    "Unimplemented packet {}",
+                    x
+                ))),
             }
         }
     }
@@ -50,7 +53,10 @@ impl PacketReader {
                 StatusRequestPacket::from_reader(self)?,
             )),
             0x01 => Ok(ServerboundPacket::Ping(PingPacket::from_reader(self)?)),
-            x => Err(ErrorType::Recoverable(format!("Unimplemented packet {}", x))),
+            x => Err(ErrorType::Recoverable(format!(
+                "Unimplemented packet {}",
+                x
+            ))),
         }
     }
 
@@ -134,7 +140,9 @@ impl PacketReader {
                 .map(|r| r.map_err(|e| e.unpaired_surrogate()))
                 .next();
         }
-        char_result.unwrap().map_err(|e| ErrorType::Fatal(e.to_string()))
+        char_result
+            .unwrap()
+            .map_err(|e| ErrorType::Fatal(e.to_string()))
     }
 
     pub fn read_string_chars(&mut self, length: usize) -> Result<String, ErrorType> {
@@ -164,7 +172,7 @@ impl PacketReader {
             | self.read_unsigned_byte()? as u64)
     }
 
-pub fn read_signed_long(&mut self) -> Result<i64, ErrorType> {
+    pub fn read_signed_long(&mut self) -> Result<i64, ErrorType> {
         Ok(self.read_unsigned_long()? as i64)
     }
 }
