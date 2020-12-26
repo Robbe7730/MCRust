@@ -1,5 +1,5 @@
 use crate::packets::Clientbound;
-use crate::packet_writer::PacketWriter;
+use crate::packets::packet_writer::PacketWriter;
 
 use uuid::Uuid;
 

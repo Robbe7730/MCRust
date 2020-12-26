@@ -8,7 +8,7 @@ pub use pong::*;
 pub use status_response::*;
 pub use login_success::*;
 
-use crate::packet_writer::PacketWriter;
+use crate::packets::packet_writer::PacketWriter;
 
 pub enum ClientboundPacket {
     LegacyPing(LegacyPingClientboundPacket),

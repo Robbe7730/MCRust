@@ -1,7 +1,7 @@
 use crate::packets::Serverbound;
 use crate::error_type::ErrorType;
 use crate::expect_equal;
-use crate::packet_reader::PacketReader;
+use crate::packets::packet_reader::PacketReader;
 
 pub struct LegacyPingServerboundPacket {
     pub hostname: String,

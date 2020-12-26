@@ -1,5 +1,5 @@
 use crate::packets::Serverbound;
-use crate::packet_reader::PacketReader;
+use crate::packets::packet_reader::PacketReader;
 use crate::error_type::ErrorType;
 
 pub struct LoginStartPacket {

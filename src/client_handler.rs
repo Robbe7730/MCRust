@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use crate::error_type::ErrorType;
-use crate::packet_reader::PacketReader;
+use crate::packets::packet_reader::PacketReader;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::structs::Chat;

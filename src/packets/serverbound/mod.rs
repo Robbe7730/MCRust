@@ -10,7 +10,7 @@ pub use ping::*;
 pub use status_request::*;
 pub use login_start::*;
 
-use crate::packet_reader::PacketReader;
+use crate::packets::packet_reader::PacketReader;
 use crate::error_type::ErrorType;
 
 pub enum ServerboundPacket {

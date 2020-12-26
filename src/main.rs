@@ -2,8 +2,6 @@ use std::net::TcpListener;
 
 mod client_handler;
 mod error_type;
-mod packet_reader;
-mod packet_writer;
 mod packets;
 mod structs;
 

@@ -1,6 +1,6 @@
 use crate::packets::Clientbound;
 
-use crate::packet_writer::PacketWriter;
+use crate::packets::packet_writer::PacketWriter;
 
 pub struct PongPacket {
     pub payload: i64,

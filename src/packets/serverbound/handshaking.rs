@@ -1,7 +1,7 @@
 use crate::packets::Serverbound;
 
 use crate::client_handler::ConnectionState;
-use crate::packet_reader::PacketReader;
+use crate::packets::packet_reader::PacketReader;
 use crate::error_type::ErrorType;
 
 pub struct HandshakingPacket {

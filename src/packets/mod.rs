@@ -1,5 +1,7 @@
 pub mod clientbound;
 pub mod serverbound;
+pub mod packet_reader;
+pub mod packet_writer;
 
 use clientbound::*;
 use serverbound::*;

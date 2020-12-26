@@ -3,7 +3,7 @@ use crate::packets::Clientbound;
 use serde::Serialize;
 use serde_json::json;
 
-use crate::packet_writer::PacketWriter;
+use crate::packets::packet_writer::PacketWriter;
 use crate::structs::Chat;
 
 #[derive(Serialize)]

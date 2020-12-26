@@ -1,4 +1,4 @@
-use crate::packet_writer::PacketWriter;
+use crate::packets::packet_writer::PacketWriter;
 use crate::packets::Clientbound;
 
 pub struct LegacyPingClientboundPacket {
