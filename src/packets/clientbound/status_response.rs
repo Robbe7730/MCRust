@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::json;
 
 use crate::packets::packet_writer::PacketWriter;
-use crate::structs::Chat;
+use crate::chat::Chat;
 
 #[derive(Serialize)]
 pub struct StatusResponsePlayer {

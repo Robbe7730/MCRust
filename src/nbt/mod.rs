@@ -1,6 +1,5 @@
-#![allow(dead_code)]
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum NBTTag {
     End,
     Byte(u8),
@@ -17,7 +16,7 @@ pub enum NBTTag {
     LongArray(Vec<i64>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NamedNBTTag {
     tag: NBTTag,
     name: String,
@@ -45,16 +44,22 @@ impl NBTTag {
             }
             NBTTag::List(values) => {
                 // This is all assuming the list entries have the same type when required
-                let mut ret = NBTTag::Byte(values[0].type_id()).serialize();
-                ret.append(&mut NBTTag::Int(values.len() as i32).serialize());
-                ret.append(
-                    &mut values
-                        .iter()
-                        .map(|value| value.serialize())
-                        .flatten()
-                        .collect(),
-                );
-                ret
+                if values.len() == 0 {
+                    let mut ret = NBTTag::End.serialize();
+                    ret.append(&mut NBTTag::Int(0).serialize());
+                    ret
+                } else {
+                    let mut ret = NBTTag::Byte(values[0].type_id()).serialize();
+                    ret.append(&mut NBTTag::Int(values.len() as i32).serialize());
+                    ret.append(
+                        &mut values
+                            .iter()
+                            .map(|value| value.serialize())
+                            .flatten()
+                            .collect(),
+                    );
+                    ret
+                }
             }
             NBTTag::Compound(values) => {
                 let mut ret: Vec<u8> = values

@@ -2,11 +2,14 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use std::convert::TryInto;
+
+use crate::chat::Chat;
 use crate::error_type::ErrorType;
-use crate::packets::packet_reader::PacketReader;
 use crate::packets::clientbound::*;
+use crate::packets::packet_reader::PacketReader;
 use crate::packets::serverbound::ServerboundPacket;
-use crate::structs::Chat;
+use crate::util::offline_player_uuid;
 use crate::Server;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
@@ -140,19 +143,50 @@ impl ClientHandler {
             }
             ServerboundPacket::LoginStart(packet) => {
                 println!("Login start from {}", packet.username);
-                let online;
+                let player;
+                let uuid;
+                let eid;
+                let cloned_settings;
+                let cloned_world;
+                let dimension_codec;
                 {
-                    let server_lock = self.server.lock().map_err(|e| {
+                    let mut server_lock = self.server.lock().map_err(|e| {
                         ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
                     })?;
-                    online = server_lock.settings.online;
+                    uuid = offline_player_uuid(&packet.username);
+                    let player_eid = server_lock.load_or_create_player(&packet.username, uuid)?;
+                    player = player_eid.0;
+                    eid = player_eid.1;
+                    cloned_settings = server_lock.settings.clone();
+                    cloned_world = server_lock.settings.worlds[&cloned_settings.selected_world].clone();
+                    dimension_codec = server_lock.dimension_codec.clone();
                 }
-                if online {
+                if cloned_settings.online {
                     Err(ErrorType::Fatal(format!("Online mode is not implemented")))?
                 } else {
-                    self.send_packet(ClientboundPacket::LoginSuccess(LoginSuccessPacket::new(packet.username)))?;
+                    self.send_packet(ClientboundPacket::LoginSuccess(LoginSuccessPacket {
+                        username: packet.username,
+                        uuid: uuid,
+                    }))?;
                 }
                 self.state = ConnectionState::Play;
+                self.send_packet(ClientboundPacket::JoinGame(JoinGamePacket {
+                    entity_id: eid,
+                    is_hardcore: cloned_settings.is_hardcore,
+                    gamemode: player.gamemode.clone(),
+                    previous_gamemode: player.previous_gamemode.clone(),
+                    world_names: cloned_settings.worlds.keys().map(|x| x.to_string()).collect(),
+                    dimension_codec: dimension_codec,
+                    dimension: player.dimension.clone(),
+                    world_name: cloned_settings.selected_world,
+                    hashed_seed: u64::from_be_bytes(cloned_world.seed[0..8].try_into().unwrap()),
+                    max_players: cloned_settings.max_players,
+                    view_distance: cloned_settings.view_distance,
+                    reduced_debug_info: cloned_world.reduced_debug_info,
+                    enable_respawn_screen: cloned_world.enable_respawn_screen,
+                    is_debug: cloned_world.is_debug,
+                    is_flat: cloned_world.is_flat,
+                }))?;
             }
         })
     }

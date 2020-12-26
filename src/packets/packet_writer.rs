@@ -4,6 +4,8 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use crate::error_type::ErrorType;
+use crate::nbt::NBTTag;
+use crate::nbt::NamedNBTTag;
 
 use uuid::Uuid;
 
@@ -51,9 +53,16 @@ impl PacketWriter {
         self.data.push(byte);
     }
 
+    pub fn add_signed_byte(&mut self, byte: i8) {
+        self.data.push(byte as u8);
+    }
+
     pub fn add_unsigned_short(&mut self, value: u16) {
-        self.data.push((value >> 8) as u8);
-        self.data.push((value & 0xff) as u8);
+        self.data.append(&mut value.to_be_bytes().into());
+    }
+
+    pub fn add_unsigned_int(&mut self, value: u32) {
+        self.data.append(&mut value.to_be_bytes().into());
     }
 
     pub fn add_utf16_string(&mut self, value: &String) {
@@ -95,14 +104,7 @@ impl PacketWriter {
     }
 
     pub fn add_unsigned_long(&mut self, value: u64) {
-        self.data.push(((value >> 56) & 0xff) as u8);
-        self.data.push(((value >> 48) & 0xff) as u8);
-        self.data.push(((value >> 40) & 0xff) as u8);
-        self.data.push(((value >> 32) & 0xff) as u8);
-        self.data.push(((value >> 24) & 0xff) as u8);
-        self.data.push(((value >> 16) & 0xff) as u8);
-        self.data.push(((value >> 8) & 0xff) as u8);
-        self.data.push((value & 0xff) as u8);
+        self.data.append(&mut value.to_be_bytes().into());
     }
 
     pub fn add_signed_long(&mut self, value: i64) {
@@ -113,5 +115,13 @@ impl PacketWriter {
         for &byte in value.as_bytes().iter().rev() {
             self.add_unsigned_byte(byte);
         }
+    }
+
+    pub fn add_nbt(&mut self, value: &NamedNBTTag) {
+        self.data.append(&mut value.serialize());
+    }
+
+    pub fn add_unnamed_nbt(&mut self, value: &NBTTag) {
+        self.data.append(&mut value.serialize());
     }
 }
