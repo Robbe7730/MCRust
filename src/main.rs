@@ -2,6 +2,7 @@ use std::net::TcpListener;
 
 mod client_handler;
 mod error_type;
+mod nbt;
 mod packets;
 mod structs;
 
