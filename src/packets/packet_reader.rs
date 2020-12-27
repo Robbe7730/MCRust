@@ -3,15 +3,15 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use super::serverbound::*;
+
 use crate::client_handler::ConnectionState;
 use crate::error_type::ErrorType;
-use crate::packets::serverbound::*;
 
 pub struct PacketReader {
     stream: Arc<Mutex<TcpStream>>,
 }
 
-#[allow(dead_code)]
 impl PacketReader {
     pub fn new(stream: Arc<Mutex<TcpStream>>) -> Self {
         Self { stream: stream }
@@ -66,7 +66,7 @@ impl PacketReader {
         let packet_id = self.read_varint()?;
         match packet_id {
             0x00 => Ok(ServerboundPacket::LoginStart(
-                    LoginStartPacket::from_reader(self)?
+                LoginStartPacket::from_reader(self)?,
             )),
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet {}",
@@ -131,10 +131,6 @@ impl PacketReader {
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(buf[0])
-    }
-
-    pub fn read_signed_byte(&mut self) -> Result<i8, ErrorType> {
-        Ok(self.read_unsigned_byte()? as i8)
     }
 
     pub fn read_unsigned_short(&mut self) -> Result<u16, ErrorType> {

@@ -1,16 +1,16 @@
-use std::net::TcpStream;
-use std::sync::Arc;
-use std::sync::Mutex;
-
-use std::convert::TryInto;
-
 use crate::chat::Chat;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::packet_reader::PacketReader;
 use crate::packets::serverbound::ServerboundPacket;
+use crate::server::World;
 use crate::util::offline_player_uuid;
 use crate::Server;
+
+use std::convert::TryInto;
+use std::net::TcpStream;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ConnectionState {
@@ -36,11 +36,11 @@ pub struct ClientHandler {
     stream: Arc<Mutex<TcpStream>>,
     state: ConnectionState,
     reader: PacketReader,
-    server: Arc<Mutex<Server>>,
+    server: Arc<Server>,
 }
 
 impl ClientHandler {
-    pub fn new(stream: TcpStream, server: Arc<Mutex<Server>>) -> Self {
+    pub fn new(stream: TcpStream, server: Arc<Server>) -> Self {
         let stream = Arc::new(Mutex::new(stream));
         Self {
             stream: stream.clone(),
@@ -90,19 +90,13 @@ impl ClientHandler {
         Ok(match packet {
             ServerboundPacket::LegacyPing(packet) => {
                 println!("Legacy Ping @ {}:{}", packet.hostname, packet.port);
-                let packet;
-                {
-                    let server_lock = self.server.lock().map_err(|e| {
-                        ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
-                    })?;
-                    packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
-                        protocol_version: server_lock.settings.protocol_version,
-                        minecraft_version: server_lock.settings.version.to_string(),
-                        motd: server_lock.settings.motd.to_string(),
-                        curr_player_count: 0,
-                        max_player_count: server_lock.settings.max_players,
-                    })
-                }
+                let packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
+                    protocol_version: self.server.settings.protocol_version,
+                    minecraft_version: self.server.settings.version.to_string(),
+                    motd: self.server.settings.motd.to_string(),
+                    curr_player_count: 0,
+                    max_player_count: self.server.settings.max_players,
+                });
                 self.send_packet(packet)?;
                 Err(ErrorType::GracefulExit)?
             }
@@ -118,20 +112,14 @@ impl ClientHandler {
             }
             ServerboundPacket::StatusRequest(_) => {
                 println!("Status Request");
-                let packet;
-                {
-                    let server_lock = self.server.lock().map_err(|e| {
-                        ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
-                    })?;
-                    packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
-                        version_name: server_lock.settings.version.to_string(),
-                        version_protocol: server_lock.settings.protocol_version,
-                        players_max: server_lock.settings.max_players,
-                        players_curr: 0,
-                        sample: vec![],
-                        description: Chat::new(server_lock.settings.motd.to_string()),
-                    })
-                }
+                let packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
+                    version_name: self.server.settings.version.to_string(),
+                    version_protocol: self.server.settings.protocol_version,
+                    players_max: self.server.settings.max_players,
+                    players_curr: 0,
+                    sample: vec![],
+                    description: Chat::new(self.server.settings.motd.to_string()),
+                });
                 self.send_packet(packet)?;
             }
             ServerboundPacket::Ping(packet) => {
@@ -143,49 +131,78 @@ impl ClientHandler {
             }
             ServerboundPacket::LoginStart(packet) => {
                 println!("Login start from {}", packet.username);
-                let player;
                 let uuid;
-                let eid;
-                let cloned_settings;
-                let cloned_world;
-                let dimension_codec;
-                {
-                    let mut server_lock = self.server.lock().map_err(|e| {
-                        ErrorType::Fatal(format!("Could not lock server {}", e.to_string()))
-                    })?;
-                    uuid = offline_player_uuid(&packet.username);
-                    let player_eid = server_lock.load_or_create_player(&packet.username, uuid)?;
-                    player = player_eid.0;
-                    eid = player_eid.1;
-                    cloned_settings = server_lock.settings.clone();
-                    cloned_world = server_lock.settings.worlds[&cloned_settings.selected_world].clone();
-                    dimension_codec = server_lock.dimension_codec.clone();
-                }
-                if cloned_settings.online {
-                    Err(ErrorType::Fatal(format!("Online mode is not implemented")))?
+
+                // Create uuid based on online mode
+                if self.server.settings.online {
+                    return Err(ErrorType::Fatal(format!("Online mode is not implemented")));
                 } else {
-                    self.send_packet(ClientboundPacket::LoginSuccess(LoginSuccessPacket {
-                        username: packet.username,
-                        uuid: uuid,
-                    }))?;
+                    uuid = offline_player_uuid(&packet.username);
                 }
+
+                // First reply
+                self.send_packet(ClientboundPacket::LoginSuccess(LoginSuccessPacket {
+                    username: packet.username.clone(),
+                    uuid: uuid,
+                }))?;
+
+                // Switch to play state
                 self.state = ConnectionState::Play;
+
+                // Create and load a new player
+                let eid = self.server.load_or_create_player(&packet.username, uuid)?;
+                let player;
+                let entity_arc = self.server.get_entity(eid)?.ok_or(ErrorType::Fatal(
+                    "Newly created player entity does not exist".to_string(),
+                ))?;
+                let entity = entity_arc.read().map_err(|e| {
+                    ErrorType::Fatal(format!(
+                        "Could not lock player for reading: {}",
+                        e.to_string()
+                    ))
+                })?;
+                player = entity
+                    .as_player()
+                    .ok_or(ErrorType::Fatal("Player is not a player.".to_string()))?;
+
+                // Load the world and some its values
+                let world: &World = self
+                    .server
+                    .settings
+                    .worlds
+                    .get(&self.server.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
+                // For borrowing reasons, these values need te be stored before calling
+                // self.send_packet
+                let hashed_seed = u64::from_be_bytes(world.seed[0..8].try_into().unwrap());
+                let reduced_debug_info = world.reduced_debug_info;
+                let enable_respawn_screen = world.enable_respawn_screen;
+                let is_debug = world.is_debug;
+                let is_flat = world.is_flat;
+
                 self.send_packet(ClientboundPacket::JoinGame(JoinGamePacket {
                     entity_id: eid,
-                    is_hardcore: cloned_settings.is_hardcore,
+                    is_hardcore: self.server.settings.is_hardcore,
                     gamemode: player.gamemode.clone(),
                     previous_gamemode: player.previous_gamemode.clone(),
-                    world_names: cloned_settings.worlds.keys().map(|x| x.to_string()).collect(),
-                    dimension_codec: dimension_codec,
+                    world_names: self
+                        .server
+                        .settings
+                        .worlds
+                        .keys()
+                        .map(|x| x.to_string())
+                        .collect(),
+                    dimension_codec: self.server.dimension_codec.clone(),
                     dimension: player.dimension.clone(),
-                    world_name: cloned_settings.selected_world,
-                    hashed_seed: u64::from_be_bytes(cloned_world.seed[0..8].try_into().unwrap()),
-                    max_players: cloned_settings.max_players,
-                    view_distance: cloned_settings.view_distance,
-                    reduced_debug_info: cloned_world.reduced_debug_info,
-                    enable_respawn_screen: cloned_world.enable_respawn_screen,
-                    is_debug: cloned_world.is_debug,
-                    is_flat: cloned_world.is_flat,
+                    world_name: self.server.settings.selected_world.clone(),
+                    hashed_seed,
+                    max_players: self.server.settings.max_players,
+                    view_distance: self.server.settings.view_distance,
+                    reduced_debug_info,
+                    enable_respawn_screen,
+                    is_debug,
+                    is_flat,
                 }))?;
             }
         })

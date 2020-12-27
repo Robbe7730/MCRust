@@ -1,5 +1,6 @@
-use crate::packets::Serverbound;
-use crate::packets::packet_reader::PacketReader;
+use super::super::packet_reader::PacketReader;
+use super::super::Serverbound;
+
 use crate::error_type::ErrorType;
 
 pub struct StatusRequestPacket {}

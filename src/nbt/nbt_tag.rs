@@ -167,15 +167,18 @@ impl<T: Into<NBTTag>> Into<NBTTag> for Vec<T> {
     }
 }
 
-impl Into<NBTTag> for HashMap<&str, NBTTag>
-where
-    Self: Sized,
-{
+impl Into<NBTTag> for HashMap<&str, NBTTag> {
     fn into(self) -> NBTTag {
         NBTTag::Compound(
             self.into_iter()
                 .map(|(k, v)| NamedNBTTag::new(k, v))
                 .collect(),
         )
+    }
+}
+
+impl Into<NBTTag> for bool {
+    fn into(self) -> NBTTag {
+        NBTTag::Byte(self as u8)
     }
 }

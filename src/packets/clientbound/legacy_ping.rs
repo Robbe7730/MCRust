@@ -1,5 +1,5 @@
-use crate::packets::packet_writer::PacketWriter;
-use crate::packets::Clientbound;
+use super::super::packet_writer::PacketWriter;
+use super::super::Clientbound;
 
 pub struct LegacyPingClientboundPacket {
     pub protocol_version: usize,

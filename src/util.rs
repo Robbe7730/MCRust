@@ -1,6 +1,7 @@
 use uuid::Uuid;
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub enum Gamemode {
     Survival,
     Creative,

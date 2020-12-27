@@ -1,11 +1,10 @@
+use crate::error_type::ErrorType;
+use crate::nbt::NamedNBTTag;
+
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
-
-use crate::error_type::ErrorType;
-use crate::nbt::NBTTag;
-use crate::nbt::NamedNBTTag;
 
 use uuid::Uuid;
 
@@ -118,10 +117,6 @@ impl PacketWriter {
     }
 
     pub fn add_nbt(&mut self, value: &NamedNBTTag) {
-        self.data.append(&mut value.serialize());
-    }
-
-    pub fn add_unnamed_nbt(&mut self, value: &NBTTag) {
         self.data.append(&mut value.serialize());
     }
 }

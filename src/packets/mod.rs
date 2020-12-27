@@ -1,7 +1,7 @@
 pub mod clientbound;
-pub mod serverbound;
 pub mod packet_reader;
 pub mod packet_writer;
+pub mod serverbound;
 
 use clientbound::*;
 use serverbound::*;
@@ -10,10 +10,12 @@ use serverbound::*;
 macro_rules! expect_equal {
     ( $actual:expr, $expected:expr ) => {{
         if ($actual != $expected) {
-            Err(ErrorType::Fatal(format!("Expected {} but got {}", $expected, $actual)))?
+            Err(ErrorType::Fatal(format!(
+                "Expected {} but got {}",
+                $expected, $actual
+            )))?
         } else {
             $expected
         }
     }};
 }
-

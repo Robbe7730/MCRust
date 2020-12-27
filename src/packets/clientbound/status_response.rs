@@ -1,10 +1,10 @@
-use crate::packets::Clientbound;
+use super::super::packet_writer::PacketWriter;
+use super::super::Clientbound;
+
+use crate::chat::Chat;
 
 use serde::Serialize;
 use serde_json::json;
-
-use crate::packets::packet_writer::PacketWriter;
-use crate::chat::Chat;
 
 #[derive(Serialize)]
 pub struct StatusResponsePlayer {

@@ -1,8 +1,9 @@
-use crate::DimensionCodec;
-use crate::Dimension;
+use super::super::packet_writer::PacketWriter;
+use super::super::Clientbound;
+
 use crate::nbt::NamedNBTTag;
-use crate::packets::packet_writer::PacketWriter;
-use crate::packets::Clientbound;
+use crate::server::Dimension;
+use crate::server::DimensionCodec;
 use crate::util::Gamemode;
 
 pub struct JoinGamePacket {
@@ -29,14 +30,17 @@ impl Clientbound for JoinGamePacket {
         writer.add_unsigned_int(self.entity_id);
         writer.add_unsigned_byte(self.is_hardcore as u8);
         writer.add_unsigned_byte(self.gamemode.to_byte());
-        writer.add_signed_byte(self.previous_gamemode.as_ref().map_or(-1, |gm| gm.to_byte() as i8));
+        writer.add_signed_byte(
+            self.previous_gamemode
+                .as_ref()
+                .map_or(-1, |gm| gm.to_byte() as i8),
+        );
         writer.add_varint(self.world_names.len());
         for world_name in &self.world_names {
             writer.add_string(&world_name);
         }
-        //writer.add_nbt(&NamedNBTTag::new("", NBTTag::Compound(vec![])));
-        writer.add_nbt(&self.dimension_codec.as_nbt());
-        writer.add_nbt(&NamedNBTTag::new("", self.dimension.element_as_nbt()));
+        writer.add_nbt(&NamedNBTTag::new("", self.dimension_codec.clone()));
+        writer.add_nbt(&NamedNBTTag::new("", self.dimension.settings.clone()));
         writer.add_string(&self.world_name);
         writer.add_unsigned_long(self.hashed_seed);
         writer.add_varint(self.max_players);

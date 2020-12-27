@@ -1,16 +1,17 @@
 pub mod handshaking;
 pub mod legacy_ping;
+pub mod login_start;
 pub mod ping;
 pub mod status_request;
-pub mod login_start;
 
 pub use handshaking::*;
 pub use legacy_ping::*;
+pub use login_start::*;
 pub use ping::*;
 pub use status_request::*;
-pub use login_start::*;
 
-use crate::packets::packet_reader::PacketReader;
+use super::packet_reader::PacketReader;
+
 use crate::error_type::ErrorType;
 
 pub enum ServerboundPacket {
@@ -26,4 +27,3 @@ pub trait Serverbound {
     where
         Self: Sized;
 }
-
