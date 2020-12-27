@@ -12,6 +12,7 @@ pub struct PacketReader {
     stream: Arc<Mutex<TcpStream>>,
 }
 
+#[allow(dead_code)]
 impl PacketReader {
     pub fn new(stream: Arc<Mutex<TcpStream>>) -> Self {
         Self { stream: stream }
@@ -134,22 +135,43 @@ impl PacketReader {
     }
 
     pub fn read_unsigned_short(&mut self) -> Result<u16, ErrorType> {
-        Ok(((self.read_unsigned_byte()? as u16) << 8) | self.read_unsigned_byte()? as u16)
+        let mut buf = [0u8; 2];
+        self.stream
+            .lock()
+            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
+            .read_exact(&mut buf)
+            .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
+        Ok(u16::from_be_bytes(buf))
     }
 
     pub fn read_signed_short(&mut self) -> Result<i16, ErrorType> {
-        Ok(self.read_unsigned_short()? as i16)
+        let mut buf = [0u8; 2];
+        self.stream
+            .lock()
+            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
+            .read_exact(&mut buf)
+            .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
+        Ok(i16::from_be_bytes(buf))
     }
 
     pub fn read_unsigned_int(&mut self) -> Result<u32, ErrorType> {
-        Ok(((self.read_unsigned_byte()? as u32) << 24)
-            | ((self.read_unsigned_byte()? as u32) << 16)
-            | ((self.read_unsigned_byte()? as u32) << 8)
-            | self.read_unsigned_byte()? as u32)
+        let mut buf = [0u8; 4];
+        self.stream
+            .lock()
+            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
+            .read_exact(&mut buf)
+            .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
+        Ok(u32::from_be_bytes(buf))
     }
 
     pub fn read_signed_int(&mut self) -> Result<i32, ErrorType> {
-        Ok(self.read_unsigned_int()? as i32)
+        let mut buf = [0u8; 4];
+        self.stream
+            .lock()
+            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
+            .read_exact(&mut buf)
+            .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
+        Ok(i32::from_be_bytes(buf))
     }
 
     pub fn read_character(&mut self) -> Result<char, ErrorType> {
@@ -184,17 +206,22 @@ impl PacketReader {
     }
 
     pub fn read_unsigned_long(&mut self) -> Result<u64, ErrorType> {
-        Ok(((self.read_unsigned_byte()? as u64) << 56)
-            | ((self.read_unsigned_byte()? as u64) << 48)
-            | ((self.read_unsigned_byte()? as u64) << 40)
-            | ((self.read_unsigned_byte()? as u64) << 32)
-            | ((self.read_unsigned_byte()? as u64) << 24)
-            | ((self.read_unsigned_byte()? as u64) << 16)
-            | ((self.read_unsigned_byte()? as u64) << 8)
-            | self.read_unsigned_byte()? as u64)
+        let mut buf = [0u8; 8];
+        self.stream
+            .lock()
+            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
+            .read_exact(&mut buf)
+            .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
+        Ok(u64::from_be_bytes(buf))
     }
 
     pub fn read_signed_long(&mut self) -> Result<i64, ErrorType> {
-        Ok(self.read_unsigned_long()? as i64)
+        let mut buf = [0u8; 8];
+        self.stream
+            .lock()
+            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
+            .read_exact(&mut buf)
+            .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
+        Ok(i64::from_be_bytes(buf))
     }
 }
