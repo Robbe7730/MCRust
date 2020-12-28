@@ -6,6 +6,8 @@ use crate::server::Dimension;
 use crate::server::DimensionCodec;
 use crate::util::Gamemode;
 
+use std::convert::TryInto;
+
 pub struct JoinGamePacket {
     pub entity_id: u32,
     pub is_hardcore: bool,
@@ -16,8 +18,8 @@ pub struct JoinGamePacket {
     pub dimension: Dimension,
     pub world_name: String,
     pub hashed_seed: u64,
-    pub max_players: usize,
-    pub view_distance: usize,
+    pub max_players: i32,
+    pub view_distance: i32,
     pub reduced_debug_info: bool,
     pub enable_respawn_screen: bool,
     pub is_debug: bool,
@@ -35,7 +37,7 @@ impl Clientbound for JoinGamePacket {
                 .as_ref()
                 .map_or(-1, |gm| gm.to_byte() as i8),
         );
-        writer.add_varint(self.world_names.len());
+        writer.add_varint(self.world_names.len().try_into().expect("Too many worlds"));
         for world_name in &self.world_names {
             writer.add_string(&world_name);
         }

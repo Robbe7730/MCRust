@@ -13,6 +13,8 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use rand::random;
+
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ConnectionState {
     Handshaking = 0,
@@ -98,7 +100,7 @@ impl ClientHandler {
                     minecraft_version: self.server.settings.version.to_string(),
                     motd: self.server.settings.motd.to_string(),
                     curr_player_count: 0,
-                    max_player_count: self.server.settings.max_players,
+                    max_player_count: self.server.settings.max_players.try_into().unwrap(),
                 });
                 self.send_packet(packet)?;
                 Err(ErrorType::GracefulExit)?
@@ -112,7 +114,7 @@ impl ClientHandler {
                 let packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
                     version_name: self.server.settings.version.to_string(),
                     version_protocol: self.server.settings.protocol_version,
-                    players_max: self.server.settings.max_players,
+                    players_max: self.server.settings.max_players.try_into().unwrap(),
                     players_curr: 0,
                     sample: vec![],
                     description: Chat::new(self.server.settings.motd.to_string()),
@@ -207,6 +209,7 @@ impl ClientHandler {
             }
             ServerboundPacket::ClientSettings(packet) => {
                 println!("{:#?}", packet);
+                // Get the player
                 let entity_arc = self
                     .server
                     .get_entity(self.player_eid)?
@@ -218,10 +221,29 @@ impl ClientHandler {
                     ))
                 })?;
                 let player = entity.as_player()?;
+
+                // Send the held item change packet
                 let slot = player.selected_slot;
                 self.send_packet(ClientboundPacket::HeldItemChange(HeldItemChangePacket {
                     slot,
                 }))?;
+
+                // Send the player position and look packet
+                let x = player.position.x;
+                let y = player.position.y;
+                let z = player.position.z;
+                let pitch = player.look.pitch;
+                let yaw = player.look.yaw;
+                self.send_packet(ClientboundPacket::PlayerPositionAndLook(
+                    PlayerPositionAndLookPacket {
+                        x: ValueType::Absolute(x),
+                        y: ValueType::Absolute(y),
+                        z: ValueType::Absolute(z),
+                        yaw: ValueType::Absolute(yaw),
+                        pitch: ValueType::Absolute(pitch),
+                        teleport_id: random()
+                    },
+                ))?;
             }
         })
     }

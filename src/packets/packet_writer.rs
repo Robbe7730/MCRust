@@ -5,6 +5,7 @@ use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::convert::TryInto;
 
 use uuid::Uuid;
 
@@ -34,7 +35,7 @@ impl PacketWriter {
             .map_err(|e| ErrorType::Fatal(format!("Could not lock stream: {}", e.to_string())))?;
 
         if self.include_length {
-            let mut data = Self::to_varint(self.data.len());
+            let mut data = Self::to_varint(self.data.len().try_into().expect("Too much data"));
             data.extend(&self.data);
             locked_stream
                 .write(&data)
@@ -64,6 +65,14 @@ impl PacketWriter {
         self.data.append(&mut value.to_be_bytes().into());
     }
 
+    pub fn add_signed_double(&mut self, value: i64) {
+        self.data.append(&mut value.to_be_bytes().into());
+    }
+
+    pub fn add_float(&mut self, value: f32) {
+        self.data.append(&mut value.to_be_bytes().into());
+    }
+
     pub fn add_utf16_string(&mut self, value: &String) {
         value
             .encode_utf16()
@@ -74,8 +83,8 @@ impl PacketWriter {
         value.bytes().for_each(|x| self.add_unsigned_byte(x));
     }
 
-    fn to_varint(value: usize) -> Vec<u8> {
-        let mut mut_value = value;
+    fn to_varint(value: i32) -> Vec<u8> {
+        let mut mut_value = value as u32;
         let mut ret = vec![];
         loop {
             let mut temp: u8 = (mut_value & 0b01111111) as u8;
@@ -91,14 +100,14 @@ impl PacketWriter {
         ret
     }
 
-    pub fn add_varint(&mut self, value: usize) {
+    pub fn add_varint(&mut self, value: i32) {
         for val in Self::to_varint(value) {
             self.add_unsigned_byte(val);
         }
     }
 
     pub fn add_string(&mut self, value: &String) {
-        self.add_varint(value.bytes().len());
+        self.add_varint(value.bytes().len().try_into().expect("String too long"));
         self.add_raw_string(value);
     }
 

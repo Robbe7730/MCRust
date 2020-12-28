@@ -8,14 +8,14 @@ use std::collections::HashMap;
 pub struct ServerSettings {
     pub version: String,
     pub protocol_version: usize,
-    pub max_players: usize,
+    pub max_players: i32,
     pub motd: String,
     pub online: bool,
     pub is_hardcore: bool,
     pub default_gamemode: Gamemode,
     pub worlds: HashMap<String, World>,
     pub selected_world: String,
-    pub view_distance: usize,
+    pub view_distance: i32,
 }
 
 impl ServerSettings {
@@ -32,7 +32,7 @@ impl ServerSettings {
             motd: format!("Hello from Rust"),
             online: false,
             is_hardcore: false,
-            default_gamemode: Gamemode::Spectator,
+            default_gamemode: Gamemode::Creative,
             worlds,
             selected_world,
             view_distance: 8,
