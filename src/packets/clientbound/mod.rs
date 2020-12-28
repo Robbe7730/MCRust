@@ -5,6 +5,7 @@ pub mod pong;
 pub mod status_response;
 pub mod held_item_change;
 pub mod player_position_and_look;
+pub mod chat_message;
 
 pub use join_game::*;
 pub use legacy_ping::*;
@@ -13,6 +14,7 @@ pub use pong::*;
 pub use status_response::*;
 pub use held_item_change::*;
 pub use player_position_and_look::*;
+pub use chat_message::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -24,6 +26,7 @@ pub enum ClientboundPacket {
     JoinGame(JoinGamePacket),
     HeldItemChange(HeldItemChangePacket),
     PlayerPositionAndLook(PlayerPositionAndLookPacket),
+    ChatMessage(ChatMessagePacket),
 }
 
 pub trait Clientbound {
@@ -40,6 +43,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::JoinGame(p) => p.writer(),
             ClientboundPacket::HeldItemChange(p) => p.writer(),
             ClientboundPacket::PlayerPositionAndLook(p) => p.writer(),
+            ClientboundPacket::ChatMessage(p) => p.writer(),
         }
     }
 }

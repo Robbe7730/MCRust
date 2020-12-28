@@ -128,4 +128,8 @@ impl PacketWriter {
     pub fn add_nbt(&mut self, value: &NamedNBTTag) {
         self.data.append(&mut value.serialize());
     }
+
+    pub fn add_json(&mut self, value: serde_json::Value) {
+        self.add_string(&value.to_string());
+    }
 }

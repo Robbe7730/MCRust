@@ -36,9 +36,8 @@ impl Clientbound for StatusResponsePacket {
                 "sample": self.sample,
             },
             "description": self.description,
-        })
-        .to_string();
-        writer.add_string(&status_json);
+        });
+        writer.add_json(status_json);
         writer
     }
 }

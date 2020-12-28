@@ -74,3 +74,20 @@ impl TryInto<ChatMode> for isize {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub enum ChatPosition {
+    NormalMessage,
+    SystemMessage,
+    AboveHotbar,
+}
+
+impl Into<i8> for ChatPosition {
+    fn into(self) -> i8 {
+        match self {
+            ChatPosition::NormalMessage => 0,
+            ChatPosition::SystemMessage => 1,
+            ChatPosition::AboveHotbar => 2,
+        }
+    }
+}

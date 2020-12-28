@@ -1,4 +1,5 @@
 use crate::chat::Chat;
+use crate::chat::ChatPosition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::packet_reader::PacketReader;
@@ -14,6 +15,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use rand::random;
+use uuid::Uuid;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum ConnectionState {
@@ -241,9 +243,16 @@ impl ClientHandler {
                         z: ValueType::Absolute(z),
                         yaw: ValueType::Absolute(yaw),
                         pitch: ValueType::Absolute(pitch),
-                        teleport_id: random()
+                        teleport_id: random(),
                     },
                 ))?;
+
+                // Send a test message
+                self.send_packet(ClientboundPacket::ChatMessage(ChatMessagePacket {
+                    message: Chat::new("Welcome to the server".to_string()),
+                    sender: Uuid::nil(),
+                    position: ChatPosition::SystemMessage,
+                }))?;
             }
         })
     }
