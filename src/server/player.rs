@@ -11,6 +11,7 @@ pub struct Player {
     pub gamemode: Gamemode,
     pub previous_gamemode: Option<Gamemode>,
     pub dimension: Dimension,
+    pub selected_slot: u8,
 }
 
 impl Player {
@@ -21,6 +22,7 @@ impl Player {
             gamemode,
             previous_gamemode: None,
             dimension,
+            selected_slot: 0,
         }
     }
 }

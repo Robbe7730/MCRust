@@ -3,12 +3,14 @@ pub mod legacy_ping;
 pub mod login_success;
 pub mod pong;
 pub mod status_response;
+pub mod held_item_change;
 
 pub use join_game::*;
 pub use legacy_ping::*;
 pub use login_success::*;
 pub use pong::*;
 pub use status_response::*;
+pub use held_item_change::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -18,6 +20,7 @@ pub enum ClientboundPacket {
     Pong(PongPacket),
     LoginSuccess(LoginSuccessPacket),
     JoinGame(JoinGamePacket),
+    HeldItemChange(HeldItemChangePacket),
 }
 
 pub trait Clientbound {
@@ -32,6 +35,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::Pong(p) => p.writer(),
             ClientboundPacket::LoginSuccess(p) => p.writer(),
             ClientboundPacket::JoinGame(p) => p.writer(),
+            ClientboundPacket::HeldItemChange(p) => p.writer(),
         }
     }
 }
