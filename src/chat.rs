@@ -1,4 +1,9 @@
 // TODO: this is ugly and WIP
+
+use crate::error_type::ErrorType;
+
+use core::convert::TryInto;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -46,6 +51,26 @@ impl Chat {
             click_event: None,
             hover_event: None,
             extra: None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ChatMode {
+    Enabled,
+    CommandsOnly,
+    Hidden,
+}
+
+impl TryInto<ChatMode> for isize {
+    type Error = ErrorType;
+
+    fn try_into(self) -> Result<ChatMode, Self::Error> {
+        match self {
+            0 => Ok(ChatMode::Enabled),
+            1 => Ok(ChatMode::CommandsOnly),
+            2 => Ok(ChatMode::Hidden),
+            x => Err(ErrorType::Recoverable(format!("Invalid chat mode {}", x))),
         }
     }
 }

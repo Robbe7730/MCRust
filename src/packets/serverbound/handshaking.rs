@@ -4,6 +4,7 @@ use super::super::packet_reader::PacketReader;
 use crate::client_handler::ConnectionState;
 use crate::error_type::ErrorType;
 
+#[derive(Debug)]
 pub struct HandshakingPacket {
     pub protocol_version: isize,
     pub server_address: String,

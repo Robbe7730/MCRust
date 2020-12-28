@@ -3,6 +3,7 @@ use super::super::Serverbound;
 
 use crate::error_type::ErrorType;
 
+#[derive(Debug)]
 pub struct PingPacket {
     pub payload: i64,
 }

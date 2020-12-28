@@ -80,6 +80,9 @@ impl PacketReader {
         let _len = self.read_varint()?;
         let packet_id = self.read_varint()?;
         match packet_id {
+            0x05 => Ok(ServerboundPacket::ClientSettings(
+                    ClientSettingsPacket::from_reader(self)?
+            )),
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet {}",
                 x
@@ -223,5 +226,14 @@ impl PacketReader {
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(i64::from_be_bytes(buf))
+    }
+    
+    pub fn read_bool(&mut self) -> Result<bool, ErrorType> {
+        let b = self.read_unsigned_byte()?;
+        match b {
+            0 => Ok(false),
+            1 => Ok(true),
+            x => Err(ErrorType::Recoverable(format!("Cannot make boolean from {}", x))),
+        }
     }
 }

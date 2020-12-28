@@ -89,7 +89,7 @@ impl ClientHandler {
         // read_packet has already filtered out incorrect states, so it is not neccesary here
         Ok(match packet {
             ServerboundPacket::LegacyPing(packet) => {
-                println!("Legacy Ping @ {}:{}", packet.hostname, packet.port);
+                println!("{:#?}", packet);
                 let packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
                     protocol_version: self.server.settings.protocol_version,
                     minecraft_version: self.server.settings.version.to_string(),
@@ -101,17 +101,11 @@ impl ClientHandler {
                 Err(ErrorType::GracefulExit)?
             }
             ServerboundPacket::Handshaking(packet) => {
-                println!(
-                    "Handshake @ {}:{} version {} to state {:?}",
-                    packet.server_address,
-                    packet.server_port,
-                    packet.protocol_version,
-                    packet.next_state
-                );
+                println!("{:#?}", packet);
                 self.state = packet.next_state;
             }
-            ServerboundPacket::StatusRequest(_) => {
-                println!("Status Request");
+            ServerboundPacket::StatusRequest(packet) => {
+                println!("{:#?}", packet);
                 let packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
                     version_name: self.server.settings.version.to_string(),
                     version_protocol: self.server.settings.protocol_version,
@@ -123,14 +117,14 @@ impl ClientHandler {
                 self.send_packet(packet)?;
             }
             ServerboundPacket::Ping(packet) => {
-                println!("Ping with payload {}", packet.payload);
+                println!("{:#?}", packet);
                 self.send_packet(ClientboundPacket::Pong(PongPacket {
                     payload: packet.payload,
                 }))?;
                 Err(ErrorType::GracefulExit)?
             }
             ServerboundPacket::LoginStart(packet) => {
-                println!("Login start from {}", packet.username);
+                println!("{:#?}", packet);
                 let uuid;
 
                 // Create uuid based on online mode
@@ -204,6 +198,9 @@ impl ClientHandler {
                     is_debug,
                     is_flat,
                 }))?;
+            }
+            ServerboundPacket::ClientSettings(packet) => {
+                println!("{:#?}", packet);
             }
         })
     }

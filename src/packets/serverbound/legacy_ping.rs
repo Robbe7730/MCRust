@@ -4,6 +4,7 @@ use super::super::Serverbound;
 use crate::error_type::ErrorType;
 use crate::expect_equal;
 
+#[derive(Debug)]
 pub struct LegacyPingServerboundPacket {
     pub hostname: String,
     pub port: u32,
