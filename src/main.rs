@@ -1,12 +1,12 @@
 mod chat;
-mod client_handler;
 mod error_type;
 mod nbt;
 mod packets;
 mod server;
 mod util;
+mod connection_states;
 
-use client_handler::ClientHandler;
+use connection_states::ClientHandler;
 use server::Server;
 
 use std::net::TcpListener;
@@ -23,7 +23,7 @@ fn main() {
     for stream in listener.incoming() {
         let server_copy = server.clone();
         thread::spawn(|| {
-            ClientHandler::new(stream.expect("Invalid stream"), server_copy).run();
+            ClientHandler::run(stream.expect("Invalid stream"));
         });
     }
 }

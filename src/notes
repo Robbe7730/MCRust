@@ -1,0 +1,14 @@
+connection_states
+  mod.rs
+  -> state: Arc<Mutex<ConnectionState>>
+  -> send_packet(packet: ClientboundPacket) -> Result?
+  (state).rs
+  -> handle_packet(packet: ServerboundPacket) -> Transition
+
+
+
+[handshaking] -> [status]
+      |    \         |
+      V     \        V
+   [play] -> [disconnect]
+

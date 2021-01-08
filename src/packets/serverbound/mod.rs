@@ -16,6 +16,7 @@ use super::packet_reader::PacketReader;
 
 use crate::error_type::ErrorType;
 
+#[derive(Debug)]
 pub enum ServerboundPacket {
     LegacyPing(LegacyPingServerboundPacket),
     Handshaking(HandshakingPacket),

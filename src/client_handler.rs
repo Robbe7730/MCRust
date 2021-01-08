@@ -17,26 +17,6 @@ use std::sync::Mutex;
 use rand::random;
 use uuid::Uuid;
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
-pub enum ConnectionState {
-    Handshaking = 0,
-    Status = 1,
-    Login = 2,
-    Play = 3,
-}
-
-impl ConnectionState {
-    pub fn from(i: isize) -> Result<Self, ErrorType> {
-        match i {
-            0 => Ok(ConnectionState::Handshaking),
-            1 => Ok(ConnectionState::Status),
-            2 => Ok(ConnectionState::Login),
-            3 => Ok(ConnectionState::Play),
-            x => Err(ErrorType::Fatal(format!("Invalid state {}", x))),
-        }
-    }
-}
-
 pub struct ClientHandler {
     stream: Arc<Mutex<TcpStream>>,
     state: ConnectionState,
@@ -46,48 +26,6 @@ pub struct ClientHandler {
 }
 
 impl ClientHandler {
-    pub fn new(stream: TcpStream, server: Arc<Server>) -> Self {
-        let stream = Arc::new(Mutex::new(stream));
-        Self {
-            stream: stream.clone(),
-            state: ConnectionState::Handshaking,
-            reader: PacketReader::new(stream.clone()),
-            server: server,
-            player_eid: 0,
-        }
-    }
-
-    pub fn run(&mut self) {
-        println!("RUN!");
-        loop {
-            let packet_result = self
-                .reader
-                .read_packet(self.state)
-                .and_then(|packet| self.handle_packet(packet));
-            match packet_result {
-                Ok(_) => println!("Another succesful packet handled"),
-                Err(ErrorType::Fatal(msg)) => {
-                    println!("FATAL: {}", msg);
-                    self.graceful_exit();
-                    break;
-                }
-                Err(ErrorType::Recoverable(msg)) => {
-                    println!("Whoops: {}", msg);
-                }
-                Err(ErrorType::GracefulExit) => {
-                    self.graceful_exit();
-                    break;
-                }
-            }
-        }
-    }
-
-    fn graceful_exit(&mut self) {
-        // The connection is closed when it goes out of scope, so for now nothing needs to be done
-        // here
-        println!("Going down");
-    }
-
     pub fn send_packet(&mut self, packet: ClientboundPacket) -> Result<(), ErrorType> {
         packet.writer().write(self.stream.clone())
     }
@@ -95,22 +33,6 @@ impl ClientHandler {
     fn handle_packet(&mut self, packet: ServerboundPacket) -> Result<(), ErrorType> {
         // read_packet has already filtered out incorrect states, so it is not neccesary here
         Ok(match packet {
-            ServerboundPacket::LegacyPing(packet) => {
-                println!("{:#?}", packet);
-                let packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
-                    protocol_version: self.server.settings.protocol_version,
-                    minecraft_version: self.server.settings.version.to_string(),
-                    motd: self.server.settings.motd.to_string(),
-                    curr_player_count: 0,
-                    max_player_count: self.server.settings.max_players.try_into().unwrap(),
-                });
-                self.send_packet(packet)?;
-                Err(ErrorType::GracefulExit)?
-            }
-            ServerboundPacket::Handshaking(packet) => {
-                println!("{:#?}", packet);
-                self.state = packet.next_state;
-            }
             ServerboundPacket::StatusRequest(packet) => {
                 println!("{:#?}", packet);
                 let packet = ClientboundPacket::StatusResponse(StatusResponsePacket {

@@ -5,7 +5,7 @@ use std::sync::Mutex;
 
 use super::serverbound::*;
 
-use crate::client_handler::ConnectionState;
+use crate::connection_states::ConnectionStateTag;
 use crate::error_type::ErrorType;
 
 pub struct PacketReader {
@@ -18,12 +18,13 @@ impl PacketReader {
         Self { stream: stream }
     }
 
-    pub fn read_packet(&mut self, state: ConnectionState) -> Result<ServerboundPacket, ErrorType> {
+    pub fn read_packet(&mut self, state: &ConnectionStateTag) -> Result<ServerboundPacket, ErrorType> {
         match state {
-            ConnectionState::Handshaking => self.read_handshaking_packet(),
-            ConnectionState::Status => self.read_status_packet(),
-            ConnectionState::Login => self.read_login_packet(),
-            ConnectionState::Play => self.read_play_packet(),
+            ConnectionStateTag::Handshaking => self.read_handshaking_packet(),
+            ConnectionStateTag::Status => self.read_status_packet(),
+            ConnectionStateTag::Login => self.read_login_packet(),
+            ConnectionStateTag::Play => self.read_play_packet(),
+            ConnectionStateTag::Exit => unreachable!(),
         }
     }
 
