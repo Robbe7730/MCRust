@@ -27,7 +27,7 @@ impl ServerSettings {
 
         Self {
             version: format!("MCRust 0.1.0"),
-            protocol_version: 498,
+            protocol_version: 754,
             max_players: 20,
             motd: format!("Hello from Rust"),
             online: false,

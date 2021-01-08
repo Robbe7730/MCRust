@@ -97,30 +97,30 @@ impl ConnectionStateTrait for LoginState {
                 let is_debug = world.is_debug;
                 let is_flat = world.is_flat;
 
-                //ClientboundPacket::JoinGame(JoinGamePacket {
-                //    entity_id: self.player_eid,
-                //    is_hardcore: server_lock.settings.is_hardcore,
-                //    gamemode,
-                //    previous_gamemode,
-                //    world_names: server_lock
-                //        .settings
-                //        .worlds
-                //        .keys()
-                //        .map(|x| x.to_string())
-                //        .collect(),
-                //    dimension_codec: server_lock.dimension_codec.clone(),
-                //    dimension,
-                //    world_name: server_lock.settings.selected_world.clone(),
-                //    hashed_seed,
-                //    max_players: server_lock.settings.max_players,
-                //    view_distance: server_lock.settings.view_distance,
-                //    reduced_debug_info,
-                //    enable_respawn_screen,
-                //    is_debug,
-                //    is_flat,
-                //})
-                //.writer()
-                //.write(stream)?;
+                ClientboundPacket::JoinGame(JoinGamePacket {
+                    entity_id: self.player_eid,
+                    is_hardcore: server_lock.settings.is_hardcore,
+                    gamemode,
+                    previous_gamemode,
+                    world_names: server_lock
+                        .settings
+                        .worlds
+                        .keys()
+                        .map(|x| x.to_string())
+                        .collect(),
+                    dimension_codec: server_lock.dimension_codec.clone(),
+                    dimension,
+                    world_name: server_lock.settings.selected_world.clone(),
+                    hashed_seed,
+                    max_players: server_lock.settings.max_players,
+                    view_distance: server_lock.settings.view_distance,
+                    reduced_debug_info,
+                    enable_respawn_screen,
+                    is_debug,
+                    is_flat,
+                })
+                .writer()
+                .write(stream)?;
                 Ok(ConnectionStateTransition::TransitionTo(
                     ConnectionStateTag::Play,
                 ))
