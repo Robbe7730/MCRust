@@ -7,6 +7,7 @@ use crate::chat::ChatPosition;
 use uuid::Uuid;
 use serde_json::json;
 
+#[derive(Debug)]
 pub struct ChatMessagePacket {
     pub message: Chat,
     pub position: ChatPosition,

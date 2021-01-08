@@ -51,7 +51,7 @@ impl Into<NBTTag> for DimensionSettings {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Dimension {
     pub name: String, // TODO: make this an identifier
     pub id: i32,

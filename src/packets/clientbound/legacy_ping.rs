@@ -1,6 +1,7 @@
 use super::super::packet_writer::PacketWriter;
 use super::super::Clientbound;
 
+#[derive(Debug)]
 pub struct LegacyPingClientboundPacket {
     pub protocol_version: usize,
     pub minecraft_version: String,

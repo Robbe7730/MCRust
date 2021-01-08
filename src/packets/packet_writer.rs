@@ -9,6 +9,7 @@ use std::convert::TryInto;
 
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct PacketWriter {
     data: Vec<u8>,
     include_length: bool,

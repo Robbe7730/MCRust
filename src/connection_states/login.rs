@@ -1,13 +1,14 @@
 use super::ConnectionState;
 use super::ConnectionStateTag;
+use super::ConnectionStateTrait;
 use super::ConnectionStateTransition;
 
-use crate::util::offline_player_uuid;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::server::Server;
 use crate::server::World;
+use crate::util::offline_player_uuid;
 use crate::Eid;
 
 use std::convert::TryInto;
@@ -15,19 +16,22 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[derive(Debug, PartialEq)]
 pub struct LoginState {
-    player_eid: Eid,
+    pub player_eid: Eid,
 }
 
-impl LoginState {
-    pub fn new() -> Self {
-        Self {
-            player_eid: 0
+impl ConnectionStateTrait for LoginState {
+    fn from_state(prev_state: ConnectionState) -> Result<Self, ErrorType> {
+        match prev_state {
+            ConnectionState::Handshaking(_) => Ok(Self { player_eid: 0 }),
+            x => Err(ErrorType::Fatal(format!(
+                "Cannot go into Login state from {:#?}",
+                x
+            ))),
         }
     }
-}
 
-impl ConnectionState for LoginState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
@@ -50,10 +54,14 @@ impl ConnectionState for LoginState {
                 }
 
                 // First reply
-                ClientboundPacket::LoginSuccess(LoginSuccessPacket {
+                let resp_packet = ClientboundPacket::LoginSuccess(LoginSuccessPacket {
                     username: packet.username.clone(),
-                    uuid: uuid,
-                }).writer().write(stream.clone())?;
+                    uuid: uuid::Uuid::nil(),
+                });
+                println!("PING {:?}", resp_packet.writer());
+                resp_packet.writer()
+                .write(stream.clone())?;
+
 
                 // Create and load a new player
                 self.player_eid = server_lock.load_or_create_player(&packet.username, uuid)?;
@@ -89,28 +97,30 @@ impl ConnectionState for LoginState {
                 let is_debug = world.is_debug;
                 let is_flat = world.is_flat;
 
-                ClientboundPacket::JoinGame(JoinGamePacket {
-                    entity_id: self.player_eid,
-                    is_hardcore: server_lock.settings.is_hardcore,
-                    gamemode,
-                    previous_gamemode,
-                    world_names: server_lock
-                        .settings
-                        .worlds
-                        .keys()
-                        .map(|x| x.to_string())
-                        .collect(),
-                    dimension_codec: server_lock.dimension_codec.clone(),
-                    dimension,
-                    world_name: server_lock.settings.selected_world.clone(),
-                    hashed_seed,
-                    max_players: server_lock.settings.max_players,
-                    view_distance: server_lock.settings.view_distance,
-                    reduced_debug_info,
-                    enable_respawn_screen,
-                    is_debug,
-                    is_flat,
-                }).writer().write(stream)?;
+                //ClientboundPacket::JoinGame(JoinGamePacket {
+                //    entity_id: self.player_eid,
+                //    is_hardcore: server_lock.settings.is_hardcore,
+                //    gamemode,
+                //    previous_gamemode,
+                //    world_names: server_lock
+                //        .settings
+                //        .worlds
+                //        .keys()
+                //        .map(|x| x.to_string())
+                //        .collect(),
+                //    dimension_codec: server_lock.dimension_codec.clone(),
+                //    dimension,
+                //    world_name: server_lock.settings.selected_world.clone(),
+                //    hashed_seed,
+                //    max_players: server_lock.settings.max_players,
+                //    view_distance: server_lock.settings.view_distance,
+                //    reduced_debug_info,
+                //    enable_respawn_screen,
+                //    is_debug,
+                //    is_flat,
+                //})
+                //.writer()
+                //.write(stream)?;
                 Ok(ConnectionStateTransition::TransitionTo(
                     ConnectionStateTag::Play,
                 ))

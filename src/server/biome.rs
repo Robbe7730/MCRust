@@ -2,7 +2,7 @@ use crate::nbt::NBTTag;
 
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum BiomeCategory {
     None,
@@ -48,7 +48,7 @@ impl Into<NBTTag> for BiomeCategory {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum PrecipitationType {
     None,
@@ -66,7 +66,7 @@ impl Into<NBTTag> for PrecipitationType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BiomeEffects {
     pub sky_color: i32,
     pub water_fog_color: i32,
@@ -85,7 +85,7 @@ impl Into<NBTTag> for BiomeEffects {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BiomeSettings {
     pub scale: f32,
     pub depth: f32,
@@ -110,7 +110,7 @@ impl Into<NBTTag> for BiomeSettings {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Biome {
     pub id: i32,
     pub name: String,

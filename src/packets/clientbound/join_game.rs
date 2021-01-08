@@ -8,6 +8,7 @@ use crate::util::Gamemode;
 
 use std::convert::TryInto;
 
+#[derive(Debug)]
 pub struct JoinGamePacket {
     pub entity_id: u32,
     pub is_hardcore: bool,

@@ -5,7 +5,7 @@ use crate::nbt::NBTTag;
 
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DimensionCodec {
     pub dimensions: HashMap<String, Dimension>,
     pub biomes: HashMap<String, Biome>,

@@ -1,4 +1,5 @@
 use super::ConnectionState;
+use super::ConnectionStateTrait;
 use super::ConnectionStateTag;
 use super::ConnectionStateTransition;
 
@@ -13,9 +14,19 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[derive(Debug, PartialEq)]
 pub struct StatusState {}
 
-impl ConnectionState for StatusState {
+impl ConnectionStateTrait for StatusState {
+    fn from_state(
+        prev_state: ConnectionState,
+    ) -> Result<Self, ErrorType> {
+        match prev_state {
+            ConnectionState::Handshaking(_) => Ok(Self {}),
+            x => Err(ErrorType::Fatal(format!("Cannot go into Status state from {:#?}", x)))
+        }
+    }
+
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,

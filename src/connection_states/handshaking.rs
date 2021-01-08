@@ -1,4 +1,5 @@
 use super::ConnectionState;
+use super::ConnectionStateTrait;
 use super::ConnectionStateTag;
 use super::ConnectionStateTransition;
 
@@ -12,9 +13,18 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[derive(Debug, PartialEq)]
 pub struct HandshakingState {}
 
-impl ConnectionState for HandshakingState {
+impl ConnectionStateTrait for HandshakingState {
+    fn from_state(
+        _state: ConnectionState,
+    ) -> Result<Self, ErrorType> {
+        Err(ErrorType::Fatal(format!(
+            "Cannot go back into Handshaking state"
+        )))
+    }
+
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
