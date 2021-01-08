@@ -33,25 +33,6 @@ impl ClientHandler {
     fn handle_packet(&mut self, packet: ServerboundPacket) -> Result<(), ErrorType> {
         // read_packet has already filtered out incorrect states, so it is not neccesary here
         Ok(match packet {
-            ServerboundPacket::StatusRequest(packet) => {
-                println!("{:#?}", packet);
-                let packet = ClientboundPacket::StatusResponse(StatusResponsePacket {
-                    version_name: self.server.settings.version.to_string(),
-                    version_protocol: self.server.settings.protocol_version,
-                    players_max: self.server.settings.max_players.try_into().unwrap(),
-                    players_curr: 0,
-                    sample: vec![],
-                    description: Chat::new(self.server.settings.motd.to_string()),
-                });
-                self.send_packet(packet)?;
-            }
-            ServerboundPacket::Ping(packet) => {
-                println!("{:#?}", packet);
-                self.send_packet(ClientboundPacket::Pong(PongPacket {
-                    payload: packet.payload,
-                }))?;
-                Err(ErrorType::GracefulExit)?
-            }
             ServerboundPacket::LoginStart(packet) => {
                 println!("{:#?}", packet);
                 let uuid;

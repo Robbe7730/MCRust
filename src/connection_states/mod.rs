@@ -4,6 +4,7 @@ mod status;
 use crate::error_type::ErrorType;
 use crate::packets::packet_reader::PacketReader;
 use crate::packets::serverbound::ServerboundPacket;
+use crate::Server;
 
 use std::net::TcpStream;
 use std::sync::Arc;
@@ -17,6 +18,7 @@ trait ConnectionState {
         &self,
         packet: ServerboundPacket,
         stream: Arc<Mutex<TcpStream>>,
+        server: Arc<Mutex<Server>>,
     ) -> Result<ConnectionStateTransition, ErrorType>;
 }
 
@@ -50,7 +52,7 @@ impl ConnectionStateTag {
 pub struct ClientHandler;
 
 impl ClientHandler {
-    pub fn run(stream: TcpStream) {
+    pub fn run(stream: TcpStream, server: Arc<Mutex<Server>>) {
         let mut state: Arc<Mutex<dyn ConnectionState>> = Arc::new(Mutex::new(HandshakingState {}));
         let mut state_tag = ConnectionStateTag::Handshaking;
         let stream_arc = Arc::new(Mutex::new(stream));
@@ -77,7 +79,11 @@ impl ClientHandler {
             let result;
             {
                 let state_locked = state.lock().expect("Could not lock state");
-                result = (*state_locked).handle_packet(packet.unwrap(), stream_arc.clone());
+                result = (*state_locked).handle_packet(
+                    packet.unwrap(),
+                    stream_arc.clone(),
+                    server.clone(),
+                );
             }
             state_tag = match result {
                 Ok(transition) => match transition {
@@ -87,13 +93,11 @@ impl ClientHandler {
                             ConnectionStateTag::Handshaking => {
                                 Arc::new(Mutex::new(HandshakingState {}))
                             }
-                            ConnectionStateTag::Status => {
-                                Arc::new(Mutex::new(StatusState {}))
-                            }
-                            ConnectionStateTag::Play => {
+                            ConnectionStateTag::Status => Arc::new(Mutex::new(StatusState {})),
+                            ConnectionStateTag::Login => {
                                 unimplemented!();
                             }
-                            ConnectionStateTag::Login => {
+                            ConnectionStateTag::Play => {
                                 unimplemented!();
                             }
                             ConnectionStateTag::Exit => {
