@@ -1,5 +1,6 @@
 mod handshaking;
 mod status;
+mod login;
 
 use crate::error_type::ErrorType;
 use crate::packets::packet_reader::PacketReader;
@@ -12,10 +13,11 @@ use std::sync::Mutex;
 
 pub use handshaking::HandshakingState;
 pub use status::StatusState;
+pub use login::LoginState;
 
 trait ConnectionState {
     fn handle_packet(
-        &self,
+        &mut self,
         packet: ServerboundPacket,
         stream: Arc<Mutex<TcpStream>>,
         server: Arc<Mutex<Server>>,
@@ -78,8 +80,8 @@ impl ClientHandler {
             }
             let result;
             {
-                let state_locked = state.lock().expect("Could not lock state");
-                result = (*state_locked).handle_packet(
+                let mut state_locked = state.lock().expect("Could not lock state");
+                result = state_locked.handle_packet(
                     packet.unwrap(),
                     stream_arc.clone(),
                     server.clone(),
@@ -94,9 +96,7 @@ impl ClientHandler {
                                 Arc::new(Mutex::new(HandshakingState {}))
                             }
                             ConnectionStateTag::Status => Arc::new(Mutex::new(StatusState {})),
-                            ConnectionStateTag::Login => {
-                                unimplemented!();
-                            }
+                            ConnectionStateTag::Login => Arc::new(Mutex::new(LoginState::new())),
                             ConnectionStateTag::Play => {
                                 unimplemented!();
                             }

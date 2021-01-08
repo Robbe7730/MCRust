@@ -16,7 +16,7 @@ pub struct HandshakingState {}
 
 impl ConnectionState for HandshakingState {
     fn handle_packet(
-        &self,
+        &mut self,
         packet: ServerboundPacket,
         stream: Arc<Mutex<TcpStream>>,
         server: Arc<Mutex<Server>>,
@@ -43,7 +43,7 @@ impl ConnectionState for HandshakingState {
                 Ok(ConnectionStateTransition::TransitionTo(packet.next_state))
             }
             x => Err(ErrorType::Fatal(format!(
-                "Unsupported packet in Handshaking mode: {:#?}",
+                "Unsupported packet in Handshaking state: {:#?}",
                 x
             ))),
         }

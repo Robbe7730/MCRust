@@ -17,7 +17,7 @@ pub struct StatusState {}
 
 impl ConnectionState for StatusState {
     fn handle_packet(
-        &self,
+        &mut self,
         packet: ServerboundPacket,
         stream: Arc<Mutex<TcpStream>>,
         server: Arc<Mutex<Server>>,
@@ -51,7 +51,7 @@ impl ConnectionState for StatusState {
                 ))
             }
             x => Err(ErrorType::Fatal(format!(
-                "Unsupported packet in Status mode: {:#?}",
+                "Unsupported packet in Status state: {:#?}",
                 x
             ))),
         }
