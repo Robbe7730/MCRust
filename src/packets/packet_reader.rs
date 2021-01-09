@@ -1,6 +1,6 @@
 use super::serverbound::*;
 
-use crate::connection_states::ConnectionStateTag;
+use crate::client_handler::ConnectionStateTag;
 use crate::error_type::ErrorType;
 
 use std::io::Read;

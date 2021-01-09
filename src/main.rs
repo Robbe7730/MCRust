@@ -1,12 +1,12 @@
 mod chat;
-mod connection_states;
+mod client_handler;
 mod error_type;
 mod nbt;
 mod packets;
 mod server;
 mod util;
 
-use connection_states::ClientHandler;
+use client_handler::ClientHandler;
 use server::ServerData;
 use packets::clientbound::ClientboundPacket;
 

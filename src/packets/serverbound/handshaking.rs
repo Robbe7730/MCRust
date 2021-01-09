@@ -1,7 +1,7 @@
 use super::super::Serverbound;
 use super::super::packet_reader::PacketReader;
 
-use crate::connection_states::ConnectionStateTag;
+use crate::client_handler::ConnectionStateTag;
 use crate::error_type::ErrorType;
 
 #[derive(Debug)]
