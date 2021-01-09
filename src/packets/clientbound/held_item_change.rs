@@ -1,7 +1,7 @@
 use super::super::Clientbound;
 use super::super::packet_writer::PacketWriter;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HeldItemChangePacket {
     pub slot: u8,
 }

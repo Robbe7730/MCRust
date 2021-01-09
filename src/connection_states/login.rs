@@ -6,15 +6,14 @@ use super::ConnectionStateTransition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
-use crate::server::Server;
 use crate::server::World;
 use crate::util::offline_player_uuid;
 use crate::Eid;
+use crate::Server;
 
 use std::convert::TryInto;
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 #[derive(Debug, PartialEq)]
 pub struct LoginState {
@@ -35,13 +34,14 @@ impl ConnectionStateTrait for LoginState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: Arc<Mutex<TcpStream>>,
-        server: Arc<Mutex<Server>>,
+        stream: TcpStream,
+        server: Arc<Server>,
     ) -> Result<ConnectionStateTransition, ErrorType> {
         println!("L: {:#?}", packet);
         match packet {
             ServerboundPacket::LoginStart(packet) => {
                 let server_lock = server
+                    .data
                     .lock()
                     .map_err(|e| ErrorType::Fatal(format!("Could not lock server: {:?}", e)))?;
                 let uuid;
@@ -58,10 +58,9 @@ impl ConnectionStateTrait for LoginState {
                     username: packet.username.clone(),
                     uuid: uuid::Uuid::nil(),
                 });
-                println!("PING {:?}", resp_packet.writer());
-                resp_packet.writer()
-                .write(stream.clone())?;
-
+                resp_packet.writer().write(stream.try_clone().map_err(|e| {
+                    ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
+                })?)?;
 
                 // Create and load a new player
                 self.player_eid = server_lock.load_or_create_player(&packet.username, uuid)?;

@@ -1,16 +1,18 @@
+pub mod chat_message;
+pub mod client_settings;
 pub mod handshaking;
 pub mod legacy_ping;
 pub mod login_start;
 pub mod ping;
 pub mod status_request;
-pub mod client_settings;
 
+pub use chat_message::*;
+pub use client_settings::*;
 pub use handshaking::*;
 pub use legacy_ping::*;
 pub use login_start::*;
 pub use ping::*;
 pub use status_request::*;
-pub use client_settings::*;
 
 use super::packet_reader::PacketReader;
 
@@ -24,6 +26,7 @@ pub enum ServerboundPacket {
     Ping(PingPacket),
     LoginStart(LoginStartPacket),
     ClientSettings(ClientSettingsPacket),
+    ChatMessage(ChatMessagePacket),
 }
 
 pub trait Serverbound {

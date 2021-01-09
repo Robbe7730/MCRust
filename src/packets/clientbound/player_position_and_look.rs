@@ -1,7 +1,7 @@
 use super::super::Clientbound;
 use super::super::packet_writer::PacketWriter;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ValueType<T> {
     Absolute(T),
     Relative(T)
@@ -23,7 +23,7 @@ impl<T> ValueType<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlayerPositionAndLookPacket {
     pub x: ValueType<i64>,
     pub y: ValueType<i64>,

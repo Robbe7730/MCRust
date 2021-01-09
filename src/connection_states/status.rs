@@ -7,12 +7,11 @@ use crate::chat::Chat;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
-use crate::server::Server;
+use crate::Server;
 
 use std::convert::TryInto;
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 #[derive(Debug, PartialEq)]
 pub struct StatusState {}
@@ -30,13 +29,14 @@ impl ConnectionStateTrait for StatusState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: Arc<Mutex<TcpStream>>,
-        server: Arc<Mutex<Server>>,
+        stream: TcpStream,
+        server: Arc<Server>,
     ) -> Result<ConnectionStateTransition, ErrorType> {
         println!("S: {:#?}", packet);
         match packet {
             ServerboundPacket::StatusRequest(_packet) => {
                 let server_lock = server
+                    .data
                     .lock()
                     .map_err(|e| ErrorType::Fatal(format!("Could not lock server: {:?}", e)))?;
                 ClientboundPacket::StatusResponse(StatusResponsePacket {
@@ -48,7 +48,9 @@ impl ConnectionStateTrait for StatusState {
                     description: Chat::new(server_lock.settings.motd.to_string()),
                 })
                 .writer()
-                .write(stream)?;
+                .write(stream.try_clone().map_err(|e| {
+                    ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
+                })?)?;
                 Ok(ConnectionStateTransition::Remain)
             }
             ServerboundPacket::Ping(packet) => {

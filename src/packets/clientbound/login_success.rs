@@ -3,7 +3,7 @@ use super::super::Clientbound;
 
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoginSuccessPacket {
     pub uuid: Uuid,
     pub username: String,

@@ -6,12 +6,11 @@ use super::ConnectionStateTransition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
-use crate::server::Server;
+use crate::Server;
 
 use std::convert::TryInto;
 use std::net::TcpStream;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 #[derive(Debug, PartialEq)]
 pub struct HandshakingState {}
@@ -28,13 +27,14 @@ impl ConnectionStateTrait for HandshakingState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: Arc<Mutex<TcpStream>>,
-        server: Arc<Mutex<Server>>,
+        stream: TcpStream,
+        server: Arc<Server>,
     ) -> Result<ConnectionStateTransition, ErrorType> {
         println!("H: {:#?}", packet);
         match packet {
             ServerboundPacket::LegacyPing(_packet) => {
                 let server_lock = server
+                    .data
                     .lock()
                     .map_err(|e| ErrorType::Fatal(format!("Could not lock server: {:?}", e)))?;
                 let packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {

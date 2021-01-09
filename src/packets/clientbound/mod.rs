@@ -18,7 +18,7 @@ pub use chat_message::*;
 
 use super::packet_writer::PacketWriter;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ClientboundPacket {
     LegacyPing(LegacyPingClientboundPacket),
     StatusResponse(StatusResponsePacket),

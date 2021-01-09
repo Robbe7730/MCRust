@@ -1,24 +1,25 @@
-use std::io::Read;
-use std::net::TcpStream;
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use super::serverbound::*;
 
 use crate::connection_states::ConnectionStateTag;
 use crate::error_type::ErrorType;
 
+use std::io::Read;
+use std::net::TcpStream;
+
 pub struct PacketReader {
-    stream: Arc<Mutex<TcpStream>>,
+    stream: TcpStream,
 }
 
 #[allow(dead_code)]
 impl PacketReader {
-    pub fn new(stream: Arc<Mutex<TcpStream>>) -> Self {
+    pub fn new(stream: TcpStream) -> Self {
         Self { stream: stream }
     }
 
-    pub fn read_packet(&mut self, state: &ConnectionStateTag) -> Result<ServerboundPacket, ErrorType> {
+    pub fn read_packet(
+        &mut self,
+        state: &ConnectionStateTag,
+    ) -> Result<ServerboundPacket, ErrorType> {
         match state {
             ConnectionStateTag::Handshaking => self.read_handshaking_packet(),
             ConnectionStateTag::Status => self.read_status_packet(),
@@ -40,10 +41,7 @@ impl PacketReader {
                 0x00 => Ok(ServerboundPacket::Handshaking(
                     HandshakingPacket::from_reader(self)?,
                 )),
-                x => Err(ErrorType::Recoverable(format!(
-                    "Unimplemented packet {}",
-                    x
-                ))),
+                x => Err(ErrorType::Fatal(format!("Invalid packet {:#04x}", x))),
             }
         }
     }
@@ -56,10 +54,7 @@ impl PacketReader {
                 StatusRequestPacket::from_reader(self)?,
             )),
             0x01 => Ok(ServerboundPacket::Ping(PingPacket::from_reader(self)?)),
-            x => Err(ErrorType::Recoverable(format!(
-                "Unimplemented packet {}",
-                x
-            ))),
+            x => Err(ErrorType::Fatal(format!("Invalid packet {:#04x}", x))),
         }
     }
 
@@ -70,22 +65,23 @@ impl PacketReader {
             0x00 => Ok(ServerboundPacket::LoginStart(
                 LoginStartPacket::from_reader(self)?,
             )),
-            x => Err(ErrorType::Recoverable(format!(
-                "Unimplemented packet {}",
-                x
-            ))),
+            x => Err(ErrorType::Fatal(format!("Invalid packet {:#04x}", x))),
         }
     }
 
     fn read_play_packet(&mut self) -> Result<ServerboundPacket, ErrorType> {
         let _len = self.read_varint()?;
         let packet_id = self.read_varint()?;
+        println!("Packet of len {} with id {}", _len, packet_id);
         match packet_id {
+            0x03 => Ok(ServerboundPacket::ChatMessage(
+                ChatMessagePacket::from_reader(self)?,
+            )),
             0x05 => Ok(ServerboundPacket::ClientSettings(
-                    ClientSettingsPacket::from_reader(self)?
+                ClientSettingsPacket::from_reader(self)?,
             )),
             x => Err(ErrorType::Recoverable(format!(
-                "Unimplemented packet {}",
+                "Unimplemented packet {:#04x}",
                 x
             ))),
         }
@@ -121,8 +117,6 @@ impl PacketReader {
     fn peek_byte(&mut self) -> Result<u8, ErrorType> {
         let mut buf = [0u8; 1];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .peek(&mut buf)
             .map_err(|e| ErrorType::Fatal(format!("Peek error: {:?}", e)))?;
         Ok(buf[0])
@@ -131,8 +125,6 @@ impl PacketReader {
     pub fn read_unsigned_byte(&mut self) -> Result<u8, ErrorType> {
         let mut buf = [0u8; 1];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(buf[0])
@@ -141,8 +133,6 @@ impl PacketReader {
     pub fn read_unsigned_short(&mut self) -> Result<u16, ErrorType> {
         let mut buf = [0u8; 2];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(u16::from_be_bytes(buf))
@@ -151,8 +141,6 @@ impl PacketReader {
     pub fn read_signed_short(&mut self) -> Result<i16, ErrorType> {
         let mut buf = [0u8; 2];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(i16::from_be_bytes(buf))
@@ -161,8 +149,6 @@ impl PacketReader {
     pub fn read_unsigned_int(&mut self) -> Result<u32, ErrorType> {
         let mut buf = [0u8; 4];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(u32::from_be_bytes(buf))
@@ -171,8 +157,6 @@ impl PacketReader {
     pub fn read_signed_int(&mut self) -> Result<i32, ErrorType> {
         let mut buf = [0u8; 4];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(i32::from_be_bytes(buf))
@@ -212,8 +196,6 @@ impl PacketReader {
     pub fn read_unsigned_long(&mut self) -> Result<u64, ErrorType> {
         let mut buf = [0u8; 8];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(u64::from_be_bytes(buf))
@@ -222,19 +204,20 @@ impl PacketReader {
     pub fn read_signed_long(&mut self) -> Result<i64, ErrorType> {
         let mut buf = [0u8; 8];
         self.stream
-            .lock()
-            .map_err(|x| ErrorType::Fatal(format!("Could not lock stream: {}", x.to_string())))?
             .read_exact(&mut buf)
             .map_err(|x| ErrorType::Fatal(format!("Read error {:?}", x)))?;
         Ok(i64::from_be_bytes(buf))
     }
-    
+
     pub fn read_bool(&mut self) -> Result<bool, ErrorType> {
         let b = self.read_unsigned_byte()?;
         match b {
             0 => Ok(false),
             1 => Ok(true),
-            x => Err(ErrorType::Recoverable(format!("Cannot make boolean from {}", x))),
+            x => Err(ErrorType::Recoverable(format!(
+                "Cannot make boolean from {}",
+                x
+            ))),
         }
     }
 }

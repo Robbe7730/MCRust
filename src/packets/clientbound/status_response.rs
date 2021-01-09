@@ -6,14 +6,14 @@ use crate::chat::Chat;
 use serde::Serialize;
 use serde_json::json;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct StatusResponsePlayer {
     pub name: String,
     pub id: String,
 }
 
 //TODO favicon
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StatusResponsePacket {
     pub version_name: String,
     pub version_protocol: usize,

@@ -24,14 +24,14 @@ use std::sync::RwLock;
 use rand::random;
 use uuid::Uuid;
 
-pub struct Server {
+pub struct ServerData {
     pub settings: ServerSettings,
     pub entities: Arc<RwLock<HashMap<u32, Arc<RwLock<Entity>>>>>,
     pub player_eids: Arc<RwLock<HashMap<Uuid, u32>>>,
     pub dimension_codec: DimensionCodec,
 }
 
-impl Server {
+impl ServerData {
     pub fn new() -> Self {
         let mut dimension_codec = DimensionCodec::new();
 
@@ -40,7 +40,7 @@ impl Server {
 
         let only_biome = Biome::dummy();
         dimension_codec.add_biome(only_biome);
-        Server {
+        Self {
             settings: ServerSettings::dummy(),
             entities: Arc::new(RwLock::new(HashMap::new())),
             player_eids: Arc::new(RwLock::new(HashMap::new())),

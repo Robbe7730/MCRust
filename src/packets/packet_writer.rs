@@ -3,8 +3,6 @@ use crate::nbt::NamedNBTTag;
 
 use std::io::Write;
 use std::net::TcpStream;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::convert::TryInto;
 
 use uuid::Uuid;
@@ -30,19 +28,15 @@ impl PacketWriter {
         }
     }
 
-    pub fn write(&self, stream: Arc<Mutex<TcpStream>>) -> Result<(), ErrorType> {
-        let mut locked_stream = stream
-            .lock()
-            .map_err(|e| ErrorType::Fatal(format!("Could not lock stream: {}", e.to_string())))?;
-
+    pub fn write(&self, mut stream: TcpStream) -> Result<(), ErrorType> {
         if self.include_length {
             let mut data = Self::to_varint(self.data.len().try_into().expect("Too much data"));
             data.extend(&self.data);
-            locked_stream
+            stream
                 .write(&data)
                 .map_err(|e| ErrorType::Fatal(e.to_string()))?;
         } else {
-            locked_stream
+            stream
                 .write(&self.data)
                 .map_err(|e| ErrorType::Fatal(e.to_string()))?;
         }
