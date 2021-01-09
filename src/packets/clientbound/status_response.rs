@@ -2,6 +2,7 @@ use super::super::packet_writer::PacketWriter;
 use super::super::Clientbound;
 
 use crate::chat::Chat;
+use crate::server::Player;
 
 use serde::Serialize;
 use serde_json::json;
@@ -10,6 +11,15 @@ use serde_json::json;
 pub struct StatusResponsePlayer {
     pub name: String,
     pub id: String,
+}
+
+impl From<&Player> for StatusResponsePlayer {
+    fn from(player: &Player) -> Self {
+        Self {
+            name: player.username.clone(),
+            id: player.uuid.to_hyphenated().to_string(),
+        }
+    }
 }
 
 //TODO favicon
