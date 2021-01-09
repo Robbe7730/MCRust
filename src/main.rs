@@ -46,7 +46,7 @@ impl Server {
         });
 
         // Set up client listener
-        let listener = TcpListener::bind("127.0.0.1:25565").expect("Could not start server");
+        let listener = TcpListener::bind("0.0.0.0:25565").expect("Could not start server");
         let mut curr_id = 0;
 
         for stream in listener.incoming() {
