@@ -7,15 +7,17 @@ mod server;
 mod util;
 
 use client_handler::ClientHandler;
-use server::ServerData;
 use packets::clientbound::ClientboundPacket;
-
+use server::ServerData;
 
 use std::collections::HashMap;
 use std::net::TcpListener;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
+use std::time::Duration;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 pub type Eid = u32;
 
@@ -27,6 +29,23 @@ pub struct Server {
 impl Server {
     pub fn run(self) {
         let server_arc = Arc::new(self);
+
+        // Set up keepalive ticks (in the future this could be game ticks)
+        let server_arc_copy = server_arc.clone();
+        thread::spawn(move || {
+            use crate::packets::clientbound::KeepAlivePacket;
+            let twenty_seconds = Duration::new(20, 0);
+            loop {
+                thread::sleep(twenty_seconds);
+                server_arc_copy.send_to_all(ClientboundPacket::KeepAlive(KeepAlivePacket {
+                    id: SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Invalid system time").as_secs() as i64,
+                }));
+            }
+        });
+
+        // Set up client listener
         let listener = TcpListener::bind("127.0.0.1:25565").expect("Could not start server");
         let mut curr_id = 0;
 
@@ -36,7 +55,8 @@ impl Server {
             let connection_id = curr_id;
             curr_id += 1;
             thread::spawn(move || {
-                let client_handler = ClientHandler::new(stream.expect("Invalid stream"), server_copy);
+                let client_handler =
+                    ClientHandler::new(stream.expect("Invalid stream"), server_copy);
                 let ch_arc = Arc::new(client_handler);
                 connections_copy
                     .lock()
@@ -50,7 +70,7 @@ impl Server {
             });
         }
     }
-    
+
     pub fn send_to_all(&self, packet: ClientboundPacket) {
         self.connections
             .lock()

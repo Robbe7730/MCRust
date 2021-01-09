@@ -80,6 +80,9 @@ impl PacketReader {
             0x05 => Ok(ServerboundPacket::ClientSettings(
                 ClientSettingsPacket::from_reader(self)?,
             )),
+            0x10 => Ok(ServerboundPacket::KeepAlive(
+                KeepAlivePacket::from_reader(self)?,
+            )),
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet {:#04x}",
                 x
