@@ -8,13 +8,13 @@ use core::convert::TryInto;
 
 #[derive(Debug)]
 pub struct SkinParts {
-    cape: bool,
-    jacket: bool,
-    left_sleeve: bool,
-    right_sleeve: bool,
-    left_pant_leg: bool,
-    right_pant_leg: bool,
-    hat: bool
+    pub cape: bool,
+    pub jacket: bool,
+    pub left_sleeve: bool,
+    pub right_sleeve: bool,
+    pub left_pant_leg: bool,
+    pub right_pant_leg: bool,
+    pub hat: bool
 }
 
 impl Into<SkinParts> for u8 {

@@ -10,7 +10,6 @@ use crate::server::Entity;
 use crate::Server;
 
 use std::convert::TryInto;
-use std::net::TcpStream;
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq)]
@@ -26,10 +25,9 @@ impl ConnectionStateTrait for HandshakingState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: TcpStream,
         server: Arc<Server>,
-    ) -> Result<ConnectionStateTransition, ErrorType> {
-        println!("H: {:#?}", packet);
+    ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType> {
+        let mut queue = vec![];
         match packet {
             ServerboundPacket::LegacyPing(_packet) => {
                 let server_lock = server
@@ -59,20 +57,19 @@ impl ConnectionStateTrait for HandshakingState {
                     })
                     .count();
 
-                let packet = ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
+                queue.push(ClientboundPacket::LegacyPing(LegacyPingClientboundPacket {
                     protocol_version: server_lock.settings.protocol_version,
                     minecraft_version: server_lock.settings.version.to_string(),
                     motd: server_lock.settings.motd.to_string(),
                     curr_player_count: player_count,
                     max_player_count: server_lock.settings.max_players.try_into().unwrap(),
-                });
-                packet.writer().write(stream)?;
-                Ok(ConnectionStateTransition::TransitionTo(
+                }));
+                Ok((queue, ConnectionStateTransition::TransitionTo(
                     ConnectionStateTag::Exit,
-                ))
+                )))
             }
             ServerboundPacket::Handshaking(packet) => {
-                Ok(ConnectionStateTransition::TransitionTo(packet.next_state))
+                Ok((queue, ConnectionStateTransition::TransitionTo(packet.next_state)))
             }
             x => Err(ErrorType::Fatal(format!(
                 "Unsupported packet in Handshaking state: {:#?}",

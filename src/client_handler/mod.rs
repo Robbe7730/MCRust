@@ -30,14 +30,13 @@ impl ConnectionState {
     pub fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: TcpStream,
         server: Arc<Server>,
-    ) -> Result<ConnectionStateTransition, ErrorType> {
+    ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType> {
         match self {
-            ConnectionState::Handshaking(s) => s.handle_packet(packet, stream, server),
-            ConnectionState::Status(s) => s.handle_packet(packet, stream, server),
-            ConnectionState::Login(s) => s.handle_packet(packet, stream, server),
-            ConnectionState::Play(s) => s.handle_packet(packet, stream, server),
+            ConnectionState::Handshaking(s) => s.handle_packet(packet, server),
+            ConnectionState::Status(s) => s.handle_packet(packet, server),
+            ConnectionState::Login(s) => s.handle_packet(packet, server),
+            ConnectionState::Play(s) => s.handle_packet(packet, server),
         }
     }
 }
@@ -46,9 +45,8 @@ trait ConnectionStateTrait {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: TcpStream,
         server: Arc<Server>,
-    ) -> Result<ConnectionStateTransition, ErrorType>;
+    ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType>;
 
     fn from_state(prev_state: ConnectionState) -> Result<Self, ErrorType>
     where
@@ -96,6 +94,7 @@ impl ClientHandler {
     }
 
     pub fn send_packet(&self, packet: ClientboundPacket) -> Result<(), ErrorType> {
+        println!("C {:?}", packet);
         packet.writer().write(
             self.stream
                 .try_clone()
@@ -111,15 +110,15 @@ impl ClientHandler {
             0
         );
         while state_tag != ConnectionStateTag::Exit {
-            let packet = reader.read_packet(&state_tag);
-            if packet.is_err() {
-                match packet {
+            let res_packet = reader.read_packet(&state_tag);
+            if res_packet.is_err() {
+                match res_packet {
                     Err(ErrorType::Fatal(msg)) => {
-                        println!("FATAL: {}", msg);
+                        eprintln!("FATAL: {}", msg);
                         break;
                     }
                     Err(ErrorType::Recoverable(msg)) => {
-                        println!("Whoops: {}", msg);
+                        eprintln!("Whoops: {}", msg);
                         continue;
                     }
                     Err(ErrorType::GracefulExit) => {
@@ -129,47 +128,58 @@ impl ClientHandler {
                     Ok(_) => unreachable!(),
                 }
             }
-            let result;
-            result = state.handle_packet(
-                packet.unwrap(),
-                self.stream.try_clone().expect("Could not lock TCP stream"),
+            let packet = res_packet.unwrap();
+            println!("S({}) {:?}", match state_tag {
+                ConnectionStateTag::Play => "P",
+                ConnectionStateTag::Handshaking => "H",
+                ConnectionStateTag::Status => "S",
+                ConnectionStateTag::Exit => "E",
+                ConnectionStateTag::Login => "L",
+            }, packet);
+            let result = state.handle_packet(
+                packet,
                 self.server.clone(),
             );
-            state_tag = match result {
-                Ok(transition) => match transition {
-                    ConnectionStateTransition::Remain => state_tag,
-                    ConnectionStateTransition::TransitionTo(new_tag) => {
-                        state = match new_tag {
-                            ConnectionStateTag::Handshaking => ConnectionState::Handshaking(
-                                HandshakingState::from_state(state).unwrap(),
-                            ),
-                            ConnectionStateTag::Status => {
-                                ConnectionState::Status(StatusState::from_state(state).unwrap())
-                            }
-                            ConnectionStateTag::Login => {
-                                ConnectionState::Login(LoginState::from_state(state).unwrap())
-                            }
-                            ConnectionStateTag::Play => {
-                                ConnectionState::Play(PlayState::from_state(state).unwrap())
-                            }
-                            ConnectionStateTag::Exit => {
-                                break;
-                            }
-                        };
-                        new_tag
+
+            match result {
+                Ok((packets, transition)) => {
+                    for packet in packets {
+                        self.send_packet(packet);
+                    }
+                    match transition {
+                        ConnectionStateTransition::TransitionTo(new_tag) => {
+                            state = match new_tag {
+                                ConnectionStateTag::Handshaking => ConnectionState::Handshaking(
+                                    HandshakingState::from_state(state).unwrap(),
+                                ),
+                                ConnectionStateTag::Status => {
+                                    ConnectionState::Status(StatusState::from_state(state).unwrap())
+                                }
+                                ConnectionStateTag::Login => {
+                                    ConnectionState::Login(LoginState::from_state(state).unwrap())
+                                }
+                                ConnectionStateTag::Play => {
+                                    ConnectionState::Play(PlayState::from_state(state).unwrap())
+                                }
+                                ConnectionStateTag::Exit => {
+                                    break;
+                                }
+                            };
+                            state_tag = new_tag;
+                        }
+                        ConnectionStateTransition::Remain => {}
                     }
                 },
                 Err(ErrorType::Fatal(msg)) => {
-                    println!("FATAL: {}", msg);
-                    ConnectionStateTag::Exit
+                    eprintln!("FATAL: {}", msg);
+                    state_tag = ConnectionStateTag::Exit;
                 }
                 Err(ErrorType::Recoverable(msg)) => {
-                    println!("Whoops: {}", msg);
-                    state_tag
+                    eprintln!("Whoops: {}", msg);
                 }
                 Err(ErrorType::GracefulExit) => {
                     println!("Goodbye o/");
-                    ConnectionStateTag::Exit
+                    state_tag = ConnectionStateTag::Exit;
                 }
             }
         }

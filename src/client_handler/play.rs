@@ -12,7 +12,6 @@ use crate::Eid;
 use crate::Server;
 
 use std::convert::TryInto;
-use std::net::TcpStream;
 use std::sync::Arc;
 
 use rand::random;
@@ -39,14 +38,13 @@ impl ConnectionStateTrait for PlayState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: TcpStream,
         server: Arc<Server>,
-    ) -> Result<ConnectionStateTransition, ErrorType> {
-        println!("P: {:#?}", packet);
+    ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType> {
         let server_lock = server
             .data
             .lock()
             .map_err(|e| ErrorType::Fatal(format!("Could not lock server: {:?}", e)))?;
+        let mut queue = vec![];
         match packet {
             ServerboundPacket::ClientSettings(_packet) => {
                 // Get the player
@@ -63,11 +61,7 @@ impl ConnectionStateTrait for PlayState {
 
                 // Send the held item change packet
                 let slot = player.selected_slot;
-                ClientboundPacket::HeldItemChange(HeldItemChangePacket { slot })
-                    .writer()
-                    .write(stream.try_clone().map_err(|e| {
-                        ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
-                    })?)?;
+                queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket { slot }));
 
                 // Send the player position and look packet
                 let x = player.position.x.round() as i64;
@@ -75,33 +69,25 @@ impl ConnectionStateTrait for PlayState {
                 let z = player.position.z.round() as i64;
                 let pitch = player.look.pitch;
                 let yaw = player.look.yaw;
-                ClientboundPacket::PlayerPositionAndLook(PlayerPositionAndLookPacket {
+                queue.push(ClientboundPacket::PlayerPositionAndLook(PlayerPositionAndLookPacket {
                     x: ValueType::Absolute(x),
                     y: ValueType::Absolute(y),
                     z: ValueType::Absolute(z),
                     yaw: ValueType::Absolute(yaw),
                     pitch: ValueType::Absolute(pitch),
                     teleport_id: random(),
-                })
-                .writer()
-                .write(stream.try_clone().map_err(|e| {
-                    ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
-                })?)?;
+                }));
 
                 // Send a test message
-                ClientboundPacket::ChatMessage(ChatMessagePacket {
+                queue.push(ClientboundPacket::ChatMessage(ChatMessagePacket {
                     message: Chat::new(format!(
                         "{} joined the game",
                         player.username
                     )),
                     sender: Uuid::nil(),
                     position: ChatPosition::SystemMessage,
-                })
-                .writer()
-                .write(stream.try_clone().map_err(|e| {
-                    ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
-                })?)?;
-                Ok(ConnectionStateTransition::Remain)
+                }));
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::ChatMessage(packet) => {
                 // Get the player
@@ -123,11 +109,11 @@ impl ConnectionStateTrait for PlayState {
                     position: ChatPosition::SystemMessage,
                 });
                 server.send_to_all(chat_packet);
-                Ok(ConnectionStateTransition::Remain)
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::KeepAlive(_packet) => {
                 // TODO: validate response id == sent response id
-                Ok(ConnectionStateTransition::Remain)
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::PluginMessage(packet) => {
                 match packet.channel.as_str() {
@@ -142,7 +128,7 @@ impl ConnectionStateTrait for PlayState {
                                 )?
                             ).read_string()?
                         );
-                        Ok(ConnectionStateTransition::Remain)
+                        Ok((queue, ConnectionStateTransition::Remain))
                     }
                     c => {
                         Err(ErrorType::Recoverable(format!("Unimplemented channel {}" , c)))
@@ -151,7 +137,7 @@ impl ConnectionStateTrait for PlayState {
             }
             ServerboundPacket::TeleportConfirm(_packet) => {
                 // TODO: validate teleport id == sent teleport id
-                Ok(ConnectionStateTransition::Remain)
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::PlayerPositionAndRotation(packet) => {
                 // Get the player
@@ -173,7 +159,7 @@ impl ConnectionStateTrait for PlayState {
                 player.look.pitch = packet.pitch;
                 player.position.on_ground = packet.on_ground;
 
-                Ok(ConnectionStateTransition::Remain)
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::HeldItemChange(packet) => {
                 if packet.slot > 8 || packet.slot < 0 {
@@ -197,7 +183,7 @@ impl ConnectionStateTrait for PlayState {
 
                 player.selected_slot = packet.slot.try_into().unwrap();
 
-                Ok(ConnectionStateTransition::Remain)
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet in Play state: {:#?}",

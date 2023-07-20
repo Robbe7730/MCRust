@@ -12,7 +12,6 @@ use crate::server::Entity;
 use crate::Server;
 
 use std::convert::TryInto;
-use std::net::TcpStream;
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq)]
@@ -32,10 +31,9 @@ impl ConnectionStateTrait for StatusState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: TcpStream,
         server: Arc<Server>,
-    ) -> Result<ConnectionStateTransition, ErrorType> {
-        println!("S: {:#?}", packet);
+    ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType> {
+        let mut queue = vec![];
         match packet {
             ServerboundPacket::StatusRequest(_packet) => {
                 let server_lock = server
@@ -65,7 +63,7 @@ impl ConnectionStateTrait for StatusState {
                     })
                     .collect::<Vec<_>>();
 
-                ClientboundPacket::StatusResponse(StatusResponsePacket {
+                queue.push(ClientboundPacket::StatusResponse(StatusResponsePacket {
                     version_name: server_lock.settings.version.to_string(),
                     version_protocol: server_lock.settings.protocol_version,
                     players_max: server_lock.settings.max_players.try_into().unwrap(),
@@ -75,22 +73,16 @@ impl ConnectionStateTrait for StatusState {
                         .map(|player| StatusResponsePlayer::from(player))
                         .collect(),
                     description: Chat::new(server_lock.settings.motd.to_string()),
-                })
-                .writer()
-                .write(stream.try_clone().map_err(|e| {
-                    ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
-                })?)?;
-                Ok(ConnectionStateTransition::Remain)
+                }));
+                Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::Ping(packet) => {
-                ClientboundPacket::Pong(PongPacket {
+                queue.push(ClientboundPacket::Pong(PongPacket {
                     payload: packet.payload,
-                })
-                .writer()
-                .write(stream)?;
-                Ok(ConnectionStateTransition::TransitionTo(
+                }));
+                Ok((queue, ConnectionStateTransition::TransitionTo(
                     ConnectionStateTag::Exit,
-                ))
+                )))
             }
             x => Err(ErrorType::Fatal(format!(
                 "Unsupported packet in Status state: {:#?}",

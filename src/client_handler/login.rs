@@ -12,7 +12,6 @@ use crate::Eid;
 use crate::Server;
 
 use std::convert::TryInto;
-use std::net::TcpStream;
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq)]
@@ -34,10 +33,9 @@ impl ConnectionStateTrait for LoginState {
     fn handle_packet(
         &mut self,
         packet: ServerboundPacket,
-        stream: TcpStream,
         server: Arc<Server>,
-    ) -> Result<ConnectionStateTransition, ErrorType> {
-        println!("L: {:#?}", packet);
+    ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType> {
+        let mut queue = vec![];
         match packet {
             ServerboundPacket::LoginStart(packet) => {
                 let server_lock = server
@@ -54,13 +52,10 @@ impl ConnectionStateTrait for LoginState {
                 }
 
                 // First reply
-                let resp_packet = ClientboundPacket::LoginSuccess(LoginSuccessPacket {
+                queue.push(ClientboundPacket::LoginSuccess(LoginSuccessPacket {
                     username: packet.username.clone(),
                     uuid: uuid::Uuid::nil(),
-                });
-                resp_packet.writer().write(stream.try_clone().map_err(|e| {
-                    ErrorType::Fatal(format!("Could not clone TCP stream: {}", e))
-                })?)?;
+                }));
 
                 // Create and load a new player
                 self.player_eid = server_lock.load_or_create_player(&packet.username, uuid)?;
@@ -96,7 +91,7 @@ impl ConnectionStateTrait for LoginState {
                 let is_debug = world.is_debug;
                 let is_flat = world.is_flat;
 
-                ClientboundPacket::JoinGame(JoinGamePacket {
+                queue.push(ClientboundPacket::JoinGame(JoinGamePacket {
                     entity_id: self.player_eid,
                     is_hardcore: server_lock.settings.is_hardcore,
                     gamemode,
@@ -117,12 +112,10 @@ impl ConnectionStateTrait for LoginState {
                     enable_respawn_screen,
                     is_debug,
                     is_flat,
-                })
-                .writer()
-                .write(stream)?;
-                Ok(ConnectionStateTransition::TransitionTo(
+                }));
+                Ok((queue, ConnectionStateTransition::TransitionTo(
                     ConnectionStateTag::Play,
-                ))
+                )))
             }
             x => Err(ErrorType::Fatal(format!(
                 "Unsupported packet in Login state: {:#?}",
