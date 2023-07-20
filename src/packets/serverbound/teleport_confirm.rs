@@ -5,7 +5,7 @@ use super::Serverbound;
 
 #[derive(Debug)]
 pub struct TeleportConfirmPacket {
-    teleport_id: isize
+    pub teleport_id: isize
 }
 
 impl Serverbound for TeleportConfirmPacket {

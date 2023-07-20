@@ -142,9 +142,30 @@ impl ClientHandler {
             );
 
             match result {
-                Ok((packets, transition)) => {
+                Ok((packets, mut transition)) => {
                     for packet in packets {
-                        self.send_packet(packet);
+                        let send_res = self.send_packet(packet);
+
+                        if send_res.is_err() {
+                            match send_res {
+                                Err(ErrorType::Fatal(msg)) => {
+                                    eprintln!("FATAL: {}", msg);
+                                    transition = ConnectionStateTransition::TransitionTo(
+                                        ConnectionStateTag::Exit
+                                    );
+                                }
+                                Err(ErrorType::Recoverable(msg)) => {
+                                    eprintln!("Whoops: {}", msg);
+                                }
+                                Err(ErrorType::GracefulExit) => {
+                                    println!("Goodbye o/");
+                                    transition = ConnectionStateTransition::TransitionTo(
+                                        ConnectionStateTag::Exit
+                                    );
+                                }
+                                Ok(_) => unreachable!()
+                            }
+                        }
                     }
                     match transition {
                         ConnectionStateTransition::TransitionTo(new_tag) => {

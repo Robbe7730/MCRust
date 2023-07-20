@@ -6,7 +6,7 @@ use super::ConnectionStateTransition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::serverbound::ServerboundPacket;
-use crate::server::World;
+use crate::world::World;
 use crate::util::offline_player_uuid;
 use crate::Eid;
 use crate::Server;
@@ -57,10 +57,16 @@ impl ConnectionStateTrait for LoginState {
                     uuid: uuid::Uuid::nil(),
                 }));
 
+                // Load the world and some its values
+                let world: &World = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
                 // Create and load a new player
                 self.player_eid = server_lock.load_or_create_player(&packet.username, uuid)?;
-                let entity_arc =
-                    server_lock
+                let entity_arc = world 
                         .get_entity(self.player_eid)?
                         .ok_or(ErrorType::Fatal(
                             "Newly created player does not exist".to_string(),
@@ -75,13 +81,6 @@ impl ConnectionStateTrait for LoginState {
                 let gamemode = player.gamemode.clone();
                 let previous_gamemode = player.previous_gamemode.clone();
                 let dimension = player.dimension.clone();
-
-                // Load the world and some its values
-                let world: &World = server_lock
-                    .settings
-                    .worlds
-                    .get(&server_lock.settings.selected_world)
-                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
 
                 // For borrowing reasons, these values need te be stored before calling
                 // self.send_packet

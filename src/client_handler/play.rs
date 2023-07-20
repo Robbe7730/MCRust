@@ -48,7 +48,13 @@ impl ConnectionStateTrait for PlayState {
         match packet {
             ServerboundPacket::ClientSettings(_packet) => {
                 // Get the player
-                let entity_arc = server_lock
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected world".to_string()))?;
+
+                let entity_arc = world
                     .get_entity(self.player_eid)?
                     .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
                 let entity = entity_arc.read().map_err(|e| {
@@ -64,9 +70,9 @@ impl ConnectionStateTrait for PlayState {
                 queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket { slot }));
 
                 // Send the player position and look packet
-                let x = player.position.x.round() as i64;
-                let y = player.position.y.round() as i64;
-                let z = player.position.z.round() as i64;
+                let x = player.position.x;
+                let y = player.position.y;
+                let z = player.position.z;
                 let pitch = player.look.pitch;
                 let yaw = player.look.yaw;
                 queue.push(ClientboundPacket::PlayerPositionAndLook(PlayerPositionAndLookPacket {
@@ -87,11 +93,38 @@ impl ConnectionStateTrait for PlayState {
                     sender: Uuid::nil(),
                     position: ChatPosition::SystemMessage,
                 }));
+
+                // Tell player where they are
+                queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
+                    chunk_x: (player.position.x / 16.0).floor() as i32,
+                    chunk_z: (player.position.z / 16.0).floor() as i32,
+                }));
+
+                for x in -16i32..16 {
+                    for z in -16i32..16 {
+                        let column = world.get_chunk_column(
+                            x.try_into().unwrap(),
+                            z.try_into().unwrap()
+                        );
+                        queue.push(ClientboundPacket::ChunkData(ChunkDataPacket::from_chunk_column(
+                            x,
+                            z,
+                            column
+                        )));
+                    }
+                }
+
                 Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::ChatMessage(packet) => {
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
                 // Get the player
-                let entity_arc = server_lock
+                let entity_arc = world
                     .get_entity(self.player_eid)?
                     .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
                 let entity = entity_arc.read().map_err(|e| {
@@ -140,8 +173,14 @@ impl ConnectionStateTrait for PlayState {
                 Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::PlayerPositionAndRotation(packet) => {
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
                 // Get the player
-                let entity_arc = server_lock
+                let entity_arc = world
                     .get_entity(self.player_eid)?
                     .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
                 let mut entity = entity_arc.write().map_err(|e| {
@@ -169,8 +208,14 @@ impl ConnectionStateTrait for PlayState {
                     )))
                 }
 
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
                 // Get the player
-                let entity_arc = server_lock
+                let entity_arc = world
                     .get_entity(self.player_eid)?
                     .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
                 let mut entity = entity_arc.write().map_err(|e| {

@@ -25,9 +25,9 @@ impl<T> ValueType<T> {
 
 #[derive(Debug, Clone)]
 pub struct PlayerPositionAndLookPacket {
-    pub x: ValueType<i64>,
-    pub y: ValueType<i64>,
-    pub z: ValueType<i64>,
+    pub x: ValueType<f64>,
+    pub y: ValueType<f64>,
+    pub z: ValueType<f64>,
     pub yaw: ValueType<f32>,
     pub pitch: ValueType<f32>,
     pub teleport_id: i32,

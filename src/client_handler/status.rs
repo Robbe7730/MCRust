@@ -41,7 +41,13 @@ impl ConnectionStateTrait for StatusState {
                     .lock()
                     .map_err(|e| ErrorType::Fatal(format!("Could not lock server: {:?}", e)))?;
 
-                let entities_lock = server_lock
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
+                let entities_lock = world
                     .entities
                     .read()
                     .map_err(|e| ErrorType::Fatal(format!("Could not lock entities: {:?}", e)))?;

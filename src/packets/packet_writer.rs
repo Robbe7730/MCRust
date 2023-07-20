@@ -1,5 +1,5 @@
 use crate::error_type::ErrorType;
-use crate::nbt::NamedNBTTag;
+use crate::nbt::{NamedNBTTag, NBTTag};
 
 use std::io::Write;
 use std::net::TcpStream;
@@ -60,7 +60,7 @@ impl PacketWriter {
         self.data.append(&mut value.to_be_bytes().into());
     }
 
-    pub fn add_signed_double(&mut self, value: i64) {
+    pub fn add_signed_double(&mut self, value: f64) {
         self.data.append(&mut value.to_be_bytes().into());
     }
 
@@ -78,7 +78,7 @@ impl PacketWriter {
         value.bytes().for_each(|x| self.add_unsigned_byte(x));
     }
 
-    fn to_varint(value: i32) -> Vec<u8> {
+    pub fn to_varint(value: i32) -> Vec<u8> {
         let mut mut_value = value as u32;
         let mut ret = vec![];
         loop {
@@ -111,7 +111,11 @@ impl PacketWriter {
     }
 
     pub fn add_signed_long(&mut self, value: i64) {
-        self.add_unsigned_long(value as u64);
+        self.data.append(&mut value.to_be_bytes().into());
+    }
+
+    pub fn add_signed_int(&mut self, value: i32) {
+        self.data.append(&mut value.to_be_bytes().into());
     }
 
     pub fn add_uuid(&mut self, value: Uuid) {
@@ -120,7 +124,15 @@ impl PacketWriter {
         }
     }
 
-    pub fn add_nbt(&mut self, value: &NamedNBTTag) {
+    pub fn add_boolean(&mut self, value: bool) {
+        self.data.append(&mut vec![if value { 1 } else { 0 }])
+    }
+
+    pub fn add_named_nbt(&mut self, value: &NamedNBTTag) {
+        self.data.append(&mut value.serialize());
+    }
+
+    pub fn add_nbt(&mut self, value: &NBTTag) {
         self.data.append(&mut value.serialize());
     }
 

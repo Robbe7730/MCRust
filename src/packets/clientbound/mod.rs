@@ -7,6 +7,8 @@ pub mod login_success;
 pub mod player_position_and_look;
 pub mod pong;
 pub mod status_response;
+pub mod chunk_data;
+pub mod update_view_position;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -17,6 +19,8 @@ pub use login_success::*;
 pub use player_position_and_look::*;
 pub use pong::*;
 pub use status_response::*;
+pub use chunk_data::*;
+pub use update_view_position::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -31,6 +35,8 @@ pub enum ClientboundPacket {
     PlayerPositionAndLook(PlayerPositionAndLookPacket),
     ChatMessage(ChatMessagePacket),
     KeepAlive(KeepAlivePacket),
+    ChunkData(ChunkDataPacket),
+    UpdateViewPosition(UpdateViewPositionPacket),
 }
 
 pub trait Clientbound {
@@ -49,6 +55,8 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::PlayerPositionAndLook(p) => p.writer(),
             ClientboundPacket::ChatMessage(p) => p.writer(),
             ClientboundPacket::KeepAlive(p) => p.writer(),
+            ClientboundPacket::ChunkData(p) => p.writer(),
+            ClientboundPacket::UpdateViewPosition(p) => p.writer(),
         }
     }
 }

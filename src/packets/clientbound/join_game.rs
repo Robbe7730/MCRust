@@ -42,8 +42,8 @@ impl Clientbound for JoinGamePacket {
         for world_name in &self.world_names {
             writer.add_string(&world_name);
         }
-        writer.add_nbt(&NamedNBTTag::new("", self.dimension_codec.clone()));
-        writer.add_nbt(&NamedNBTTag::new("", self.dimension.settings.clone()));
+        writer.add_named_nbt(&NamedNBTTag::new("", self.dimension_codec.clone()));
+        writer.add_named_nbt(&NamedNBTTag::new("", self.dimension.settings.clone()));
         writer.add_string(&self.world_name);
         writer.add_unsigned_long(self.hashed_seed);
         writer.add_varint(self.max_players);

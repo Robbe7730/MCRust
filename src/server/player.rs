@@ -39,7 +39,7 @@ impl Player {
             previous_gamemode: None,
             dimension,
             selected_slot: 0,
-            position: Position { x: 0.0, y: 0.0, z: 0.0, on_ground: false },
+            position: Position { x: 10.0, y: 64.0, z: 20.0, on_ground: true },
             look: Look {
                 yaw: 0.0,
                 pitch: 0.0,

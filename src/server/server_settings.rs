@@ -1,6 +1,4 @@
-use super::World;
-
-use crate::util::Gamemode;
+use crate::{util::Gamemode, world::World};
 
 use std::collections::HashMap;
 
@@ -35,7 +33,7 @@ impl ServerSettings {
             default_gamemode: Gamemode::Creative,
             worlds,
             selected_world,
-            view_distance: 8,
+            view_distance: 16,
         }
     }
 }

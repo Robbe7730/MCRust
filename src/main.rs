@@ -5,6 +5,7 @@ mod nbt;
 mod packets;
 mod server;
 mod util;
+mod world;
 
 use client_handler::ClientHandler;
 use packets::clientbound::ClientboundPacket;
