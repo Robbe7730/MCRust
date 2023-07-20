@@ -8,6 +8,7 @@ pub mod ping;
 pub mod status_request;
 pub mod plugin_message;
 pub mod teleport_confirm;
+pub mod player_position_and_rotation;
 
 pub use chat_message::*;
 pub use client_settings::*;
@@ -19,6 +20,7 @@ pub use ping::*;
 pub use status_request::*;
 pub use plugin_message::*;
 pub use teleport_confirm::*;
+pub use player_position_and_rotation::*;
 
 use super::packet_reader::PacketReader;
 
@@ -36,6 +38,7 @@ pub enum ServerboundPacket {
     KeepAlive(KeepAlivePacket),
     PluginMessage(PluginMessagePacket),
     TeleportConfirm(TeleportConfirmPacket),
+    PlayerPositionAndRotation(PlayerPositionAndRotationPacket),
 }
 
 pub trait Serverbound {

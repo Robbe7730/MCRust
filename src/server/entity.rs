@@ -13,4 +13,10 @@ impl Entity {
             Entity::PlayerEntity(p) => Ok(p),
         }
     }
+
+    pub fn as_player_mut(&mut self) -> Result<&mut Player, ErrorType> {
+        match self {
+            Entity::PlayerEntity(p) => Ok(p),
+        }
+    }
 }

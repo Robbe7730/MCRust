@@ -6,9 +6,10 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct Position {
-    pub x: i64,
-    pub y: i64,
-    pub z: i64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub on_ground: bool
 }
 
 #[derive(Clone)]
@@ -38,7 +39,7 @@ impl Player {
             previous_gamemode: None,
             dimension,
             selected_slot: 0,
-            position: Position { x: 0, y: 0, z: 0 },
+            position: Position { x: 0.0, y: 0.0, z: 0.0, on_ground: false },
             look: Look {
                 yaw: 0.0,
                 pitch: 0.0,

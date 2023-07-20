@@ -70,9 +70,9 @@ impl ConnectionStateTrait for PlayState {
                     })?)?;
 
                 // Send the player position and look packet
-                let x = player.position.x;
-                let y = player.position.y;
-                let z = player.position.z;
+                let x = player.position.x.round() as i64;
+                let y = player.position.y.round() as i64;
+                let z = player.position.z.round() as i64;
                 let pitch = player.look.pitch;
                 let yaw = player.look.yaw;
                 ClientboundPacket::PlayerPositionAndLook(PlayerPositionAndLookPacket {
@@ -148,6 +148,28 @@ impl ConnectionStateTrait for PlayState {
             }
             ServerboundPacket::TeleportConfirm(_packet) => {
                 // TODO: validate teleport id == sent teleport id
+                Ok(ConnectionStateTransition::Remain)
+            }
+            ServerboundPacket::PlayerPositionAndRotation(packet) => {
+                // Get the player
+                let entity_arc = server_lock
+                    .get_entity(self.player_eid)?
+                    .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
+                let mut entity = entity_arc.write().map_err(|e| {
+                    ErrorType::Fatal(format!(
+                        "Could not lock player for reading: {}",
+                        e.to_string()
+                    ))
+                })?;
+                let player = entity.as_player_mut()?;
+
+                player.position.x = packet.x;
+                player.position.y = packet.feet_y;
+                player.position.z = packet.z;
+                player.look.yaw = packet.yaw;
+                player.look.pitch = packet.pitch;
+                player.position.on_ground = packet.on_ground;
+
                 Ok(ConnectionStateTransition::Remain)
             }
             x => Err(ErrorType::Recoverable(format!(

@@ -77,19 +77,22 @@ impl PacketReader {
         let packet_id = self.read_varint()?;
         match packet_id {
             0x00 => Ok(ServerboundPacket::TeleportConfirm(
-                TeleportConfirmPacket::from_reader(self)?,
+                TeleportConfirmPacket::from_reader(self)?
             )),
             0x03 => Ok(ServerboundPacket::ChatMessage(
-                ChatMessagePacket::from_reader(self)?,
+                ChatMessagePacket::from_reader(self)?
             )),
             0x05 => Ok(ServerboundPacket::ClientSettings(
-                ClientSettingsPacket::from_reader(self)?,
+                ClientSettingsPacket::from_reader(self)?
             )),
             0x0b => Ok(ServerboundPacket::PluginMessage(
                 PluginMessagePacket::from_reader(self)?
             )),
             0x10 => Ok(ServerboundPacket::KeepAlive(
-                KeepAlivePacket::from_reader(self)?,
+                KeepAlivePacket::from_reader(self)?
+            )),
+            0x13 => Ok(ServerboundPacket::PlayerPositionAndRotation(
+                PlayerPositionAndRotationPacket::from_reader(self)?
             )),
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet {:#04x}",

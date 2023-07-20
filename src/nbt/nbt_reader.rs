@@ -119,6 +119,18 @@ impl<S: Read> NBTReader<S> {
         Ok(i64::from_be_bytes(buf))
     }
 
+    pub fn read_double(&mut self) -> Result<f64, ErrorType> {
+        let mut buf = [0u8; 8];
+        self.read_raw(&mut buf)?;
+        Ok(f64::from_be_bytes(buf))
+    }
+
+    pub fn read_float(&mut self) -> Result<f32, ErrorType> {
+        let mut buf = [0u8; 4];
+        self.read_raw(&mut buf)?;
+        Ok(f32::from_be_bytes(buf))
+    }
+
     pub fn read_bool(&mut self) -> Result<bool, ErrorType> {
         let b = self.read_unsigned_byte()?;
         match b {
