@@ -75,8 +75,10 @@ impl PacketReader {
         self.curr_packet_length = self.read_varint()?;
         self.curr_packet_index = 0;
         let packet_id = self.read_varint()?;
-        println!("Packet of len {} with id {}", self.curr_packet_length, packet_id);
         match packet_id {
+            0x00 => Ok(ServerboundPacket::TeleportConfirm(
+                TeleportConfirmPacket::from_reader(self)?,
+            )),
             0x03 => Ok(ServerboundPacket::ChatMessage(
                 ChatMessagePacket::from_reader(self)?,
             )),

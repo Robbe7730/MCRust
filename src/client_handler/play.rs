@@ -146,6 +146,10 @@ impl ConnectionStateTrait for PlayState {
                     }
                 }
             }
+            ServerboundPacket::TeleportConfirm(_packet) => {
+                // TODO: validate teleport id == sent teleport id
+                Ok(ConnectionStateTransition::Remain)
+            }
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet in Play state: {:#?}",
                 x
