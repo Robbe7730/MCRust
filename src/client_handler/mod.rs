@@ -90,7 +90,7 @@ pub struct ClientHandler {
 impl ClientHandler {
     pub fn new(stream: TcpStream, server: Arc<Server>) -> ClientHandler {
         Self {
-            stream: stream,
+            stream,
             server,
         }
     }
@@ -106,8 +106,10 @@ impl ClientHandler {
     pub fn run(&self) {
         let mut state: ConnectionState = ConnectionState::Handshaking(HandshakingState {});
         let mut state_tag = ConnectionStateTag::Handshaking;
-        let mut reader =
-            PacketReader::new(self.stream.try_clone().expect("Could not clone TCP stream"));
+        let mut reader = PacketReader::new(
+            self.stream.try_clone().expect("Could not clone TCP stream"),
+            0
+        );
         while state_tag != ConnectionStateTag::Exit {
             let packet = reader.read_packet(&state_tag);
             if packet.is_err() {

@@ -23,8 +23,8 @@ impl Serverbound for LegacyPingServerboundPacket {
         let hostname = reader.read_string_chars(hostname_len.into())?;
         let port = reader.read_unsigned_int()?;
         Ok(Self {
-            hostname: hostname,
-            port: port,
+            hostname,
+            port,
         })
     }
 }

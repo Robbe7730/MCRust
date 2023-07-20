@@ -6,6 +6,7 @@ pub mod legacy_ping;
 pub mod login_start;
 pub mod ping;
 pub mod status_request;
+pub mod plugin_message;
 
 pub use chat_message::*;
 pub use client_settings::*;
@@ -15,6 +16,7 @@ pub use legacy_ping::*;
 pub use login_start::*;
 pub use ping::*;
 pub use status_request::*;
+pub use plugin_message::*;
 
 use super::packet_reader::PacketReader;
 
@@ -30,6 +32,7 @@ pub enum ServerboundPacket {
     ClientSettings(ClientSettingsPacket),
     ChatMessage(ChatMessagePacket),
     KeepAlive(KeepAlivePacket),
+    PluginMessage(PluginMessagePacket)
 }
 
 pub trait Serverbound {

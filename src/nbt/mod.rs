@@ -1,8 +1,10 @@
 mod named_nbt_tag;
 mod nbt_tag;
+mod nbt_reader;
 
 pub use named_nbt_tag::*;
 pub use nbt_tag::*;
+pub use nbt_reader::*;
 
 #[cfg(test)]
 mod test {

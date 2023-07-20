@@ -6,10 +6,12 @@ use crate::chat::Chat;
 use crate::chat::ChatPosition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
+use crate::nbt::NBTReader;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::Eid;
 use crate::Server;
 
+use std::convert::TryInto;
 use std::net::TcpStream;
 use std::sync::Arc;
 
@@ -119,6 +121,30 @@ impl ConnectionStateTrait for PlayState {
                 });
                 server.send_to_all(chat_packet);
                 Ok(ConnectionStateTransition::Remain)
+            }
+            ServerboundPacket::KeepAlive(_packet) => {
+                // TODO: validate response id == sent response id
+                Ok(ConnectionStateTransition::Remain)
+            }
+            ServerboundPacket::PluginMessage(packet) => {
+                match packet.channel.as_str() {
+                    "minecraft:brand" => {
+                        println!(
+                            "Player {} is using brand {}",
+                            self.player_eid,
+                            NBTReader::new(
+                                packet.data.as_slice(),
+                                packet.data.len().try_into().map_err(|_|
+                                    ErrorType::Recoverable(format!("Packet data too big"))
+                                )?
+                            ).read_string()?
+                        );
+                        Ok(ConnectionStateTransition::Remain)
+                    }
+                    c => {
+                        Err(ErrorType::Recoverable(format!("Unimplemented channel {}" , c)))
+                    }
+                }
             }
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet in Play state: {:#?}",
