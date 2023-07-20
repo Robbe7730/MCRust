@@ -94,6 +94,9 @@ impl PacketReader {
             0x13 => Ok(ServerboundPacket::PlayerPositionAndRotation(
                 PlayerPositionAndRotationPacket::from_reader(self)?
             )),
+            0x25 => Ok(ServerboundPacket::HeldItemChange(
+                HeldItemChangePacket::from_reader(self)?
+            )),
             x => Err(ErrorType::Recoverable(format!(
                 "Unimplemented packet {:#04x}",
                 x

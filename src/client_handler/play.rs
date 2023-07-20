@@ -90,7 +90,10 @@ impl ConnectionStateTrait for PlayState {
 
                 // Send a test message
                 ClientboundPacket::ChatMessage(ChatMessagePacket {
-                    message: Chat::new("Welcome to the server".to_string()),
+                    message: Chat::new(format!(
+                        "{} joined the game",
+                        player.username
+                    )),
                     sender: Uuid::nil(),
                     position: ChatPosition::SystemMessage,
                 })
@@ -157,7 +160,7 @@ impl ConnectionStateTrait for PlayState {
                     .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
                 let mut entity = entity_arc.write().map_err(|e| {
                     ErrorType::Fatal(format!(
-                        "Could not lock player for reading: {}",
+                        "Could not lock player for writing: {}",
                         e.to_string()
                     ))
                 })?;
@@ -169,6 +172,30 @@ impl ConnectionStateTrait for PlayState {
                 player.look.yaw = packet.yaw;
                 player.look.pitch = packet.pitch;
                 player.position.on_ground = packet.on_ground;
+
+                Ok(ConnectionStateTransition::Remain)
+            }
+            ServerboundPacket::HeldItemChange(packet) => {
+                if packet.slot > 8 || packet.slot < 0 {
+                    return Err(ErrorType::Recoverable(format!(
+                        "Invalid item slot {}",
+                        packet.slot
+                    )))
+                }
+
+                // Get the player
+                let entity_arc = server_lock
+                    .get_entity(self.player_eid)?
+                    .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
+                let mut entity = entity_arc.write().map_err(|e| {
+                    ErrorType::Fatal(format!(
+                        "Could not lock player for writing: {}",
+                        e.to_string()
+                    ))
+                })?;
+                let player = entity.as_player_mut()?;
+
+                player.selected_slot = packet.slot.try_into().unwrap();
 
                 Ok(ConnectionStateTransition::Remain)
             }
