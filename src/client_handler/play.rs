@@ -75,6 +75,17 @@ impl ConnectionStateTrait for PlayState {
                     data: brand_data,
                 }));
 
+                // Send the difficulty
+                queue.push(ClientboundPacket::ChangeDifficulty(ChangeDifficultyPacket{
+                    difficulty: world.difficulty,
+                    difficulty_locked: world.difficulty_locked,
+                }));
+
+                // -----------------------
+                // Everything above this line follows the normal login sequence
+                // https://wiki.vg/Protocol_FAQ#What.27s_the_normal_login_sequence_for_a_client.3F
+                // -----------------------
+
                 // Send the held item change packet
                 let slot = player.selected_slot;
                 queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket { slot }));

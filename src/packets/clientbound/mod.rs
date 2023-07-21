@@ -10,6 +10,7 @@ pub mod status_response;
 pub mod chunk_data;
 pub mod update_view_position;
 pub mod plugin_message;
+pub mod change_difficulty;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -23,6 +24,7 @@ pub use status_response::*;
 pub use chunk_data::*;
 pub use update_view_position::*;
 pub use plugin_message::*;
+pub use change_difficulty::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -40,6 +42,7 @@ pub enum ClientboundPacket {
     ChunkData(ChunkDataPacket),
     UpdateViewPosition(UpdateViewPositionPacket),
     PluginMessage(PluginMessagePacket),
+    ChangeDifficulty(ChangeDifficultyPacket),
 }
 
 pub trait Clientbound {
@@ -61,6 +64,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::ChunkData(p) => p.writer(),
             ClientboundPacket::UpdateViewPosition(p) => p.writer(),
             ClientboundPacket::PluginMessage(p) => p.writer(),
+            ClientboundPacket::ChangeDifficulty(p) => p.writer(),
         }
     }
 }

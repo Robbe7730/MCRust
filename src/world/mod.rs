@@ -1,8 +1,10 @@
 mod chunk_section;
 mod chunk_column;
+mod difficulty;
 
 pub use chunk_section::ChunkSection;
 pub use chunk_column::ChunkColumn;
+pub use difficulty::*;
 
 use std::{sync::{Arc, RwLock}, collections::HashMap};
 
@@ -19,6 +21,8 @@ pub struct World {
     pub is_debug: bool,
     pub is_flat: bool,
     pub entities: Arc<RwLock<HashMap<u32, Arc<RwLock<Entity>>>>>,
+    pub difficulty:  Difficulty,
+    pub difficulty_locked: bool,
 }
 
 impl World {
@@ -31,6 +35,8 @@ impl World {
             is_debug: false,
             is_flat: true,
             entities: Arc::new(RwLock::new(HashMap::new())),
+            difficulty: Difficulty::Easy,
+            difficulty_locked: false,
         }
     }
 
