@@ -78,7 +78,7 @@ impl ServerData {
         // TODO implement this
         return vec![
             Recipe {
-                id: "minecraft:test".to_string(),
+                id: "minecraft:dirt_shapeless".to_string(),
                 data: RecipeData::CraftingShapeless(
                     "test1".to_string(),
                     vec![
@@ -95,6 +95,51 @@ impl ServerData {
                         present: true,
                         item_id: Some(9),
                         count: Some(2),
+                        nbt: Some(NBTTag::End)
+                    }
+                )
+            },
+            Recipe {
+                id: "minecraft:dirt_shaped".to_string(),
+                data: RecipeData::CraftingShaped(
+                    2,
+                    2,
+                    "test2".to_string(),
+                    vec![
+                        vec![
+                            Slot {
+                                present: true,
+                                item_id: Some(9),
+                                count: Some(1),
+                                nbt: Some(NBTTag::End)
+                            },
+                        ], vec![
+                            Slot {
+                                present: true,
+                                item_id: Some(9),
+                                count: Some(1),
+                                nbt: Some(NBTTag::End)
+                            },
+                        ], vec![
+                            Slot {
+                                present: true,
+                                item_id: Some(9),
+                                count: Some(1),
+                                nbt: Some(NBTTag::End)
+                            },
+                        ], vec![
+                            Slot {
+                                present: true,
+                                item_id: Some(9),
+                                count: Some(1),
+                                nbt: Some(NBTTag::End)
+                            }
+                        ]
+                    ], 
+                    Slot {
+                        present: true,
+                        item_id: Some(9),
+                        count: Some(9),
                         nbt: Some(NBTTag::End)
                     }
                 )
