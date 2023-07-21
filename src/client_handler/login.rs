@@ -5,6 +5,7 @@ use super::ConnectionStateTransition;
 
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
+use crate::packets::packet_writer::PacketWriter;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::world::World;
 use crate::util::offline_player_uuid;
@@ -112,6 +113,24 @@ impl ConnectionStateTrait for LoginState {
                     is_debug,
                     is_flat,
                 }));
+
+                // Send the brand
+                let version = server_lock.settings.version.clone();
+                let mut brand_data = PacketWriter::to_varint(version.len().try_into().unwrap());
+                brand_data.append(&mut version.into_bytes());
+                queue.push(ClientboundPacket::PluginMessage(PluginMessagePacket {
+                    channel: "minecraft:brand".to_string(),
+                    data: brand_data,
+                }));
+
+                // Send the difficulty
+                queue.push(ClientboundPacket::ChangeDifficulty(ChangeDifficultyPacket{
+                    difficulty: world.difficulty,
+                    difficulty_locked: world.difficulty_locked,
+                }));
+
+                // Send player abilities
+                queue.push(ClientboundPacket::PlayerAbilities(PlayerAbilitiesPacket::from_player(player)));
                 Ok((queue, ConnectionStateTransition::TransitionTo(
                     ConnectionStateTag::Play,
                 )))

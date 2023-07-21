@@ -12,6 +12,7 @@ pub mod update_view_position;
 pub mod plugin_message;
 pub mod change_difficulty;
 pub mod player_abilities;
+pub mod declare_recipies;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -27,6 +28,7 @@ pub use update_view_position::*;
 pub use plugin_message::*;
 pub use change_difficulty::*;
 pub use player_abilities::*;
+pub use declare_recipies::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -46,6 +48,7 @@ pub enum ClientboundPacket {
     PluginMessage(PluginMessagePacket),
     ChangeDifficulty(ChangeDifficultyPacket),
     PlayerAbilities(PlayerAbilitiesPacket),
+    DeclareRecipies(DeclareRecipiesPacket),
 }
 
 pub trait Clientbound {
@@ -69,6 +72,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::PluginMessage(p) => p.writer(),
             ClientboundPacket::ChangeDifficulty(p) => p.writer(),
             ClientboundPacket::PlayerAbilities(p) => p.writer(),
+            ClientboundPacket::DeclareRecipies(p) => p.writer(),
         }
     }
 }

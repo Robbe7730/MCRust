@@ -1,3 +1,5 @@
+use rand::random;
+
 use super::ConnectionState;
 use super::ConnectionStateTrait;
 use super::ConnectionStateTransition;
@@ -7,16 +9,12 @@ use crate::chat::ChatPosition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::nbt::NBTReader;
-use crate::packets::packet_writer::PacketWriter;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::Eid;
 use crate::Server;
 
 use std::convert::TryInto;
 use std::sync::Arc;
-
-use rand::random;
-use uuid::Uuid;
 
 #[derive(Debug, PartialEq)]
 pub struct PlayState {
@@ -49,9 +47,7 @@ impl ConnectionStateTrait for PlayState {
         match packet {
             ServerboundPacket::ClientSettings(_packet) => {
                 // Get the player
-                let world = server_lock
-                    .settings
-                    .worlds
+                let world = server_lock.settings.worlds
                     .get(&server_lock.settings.selected_world)
                     .ok_or(ErrorType::Fatal("Invalid selected world".to_string()))?;
 
@@ -66,50 +62,13 @@ impl ConnectionStateTrait for PlayState {
                 })?;
                 let player = entity.as_player()?;
 
-                // Send the brand
-                let version = server_lock.settings.version.clone();
-                let mut brand_data = PacketWriter::to_varint(version.len().try_into().unwrap());
-                brand_data.append(&mut version.into_bytes());
-                queue.push(ClientboundPacket::PluginMessage(PluginMessagePacket {
-                    channel: "minecraft:brand".to_string(),
-                    data: brand_data,
+                // Send Held Item
+                queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket::from_player(&player)));
+
+                // Send available recipies
+                queue.push(ClientboundPacket::DeclareRecipies(DeclareRecipiesPacket {
+                    recipies: server_lock.recipies.clone(),
                 }));
-
-                // Send the difficulty
-                queue.push(ClientboundPacket::ChangeDifficulty(ChangeDifficultyPacket{
-                    difficulty: world.difficulty,
-                    difficulty_locked: world.difficulty_locked,
-                }));
-
-                // Send player abilities
-                queue.push(ClientboundPacket::PlayerAbilities(PlayerAbilitiesPacket::from_player(player)));
-
-                // -----------------------
-                // Everything above this line follows the normal login sequence
-                // https://wiki.vg/Protocol_FAQ#What.27s_the_normal_login_sequence_for_a_client.3F
-                // -----------------------
-
-                // Send the held item change packet
-                let slot = player.selected_slot;
-                queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket { slot }));
-
-                // Send chunks
-                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
-                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
-                for x in -8i32..8 {
-                    for z in -8i32..8 {
-                        let column = world.get_chunk_column(
-                            (player_chunk_x + x).try_into().unwrap(),
-                            (player_chunk_z + z).try_into().unwrap(),
-                        );
-                        queue.push(ClientboundPacket::ChunkData(ChunkDataPacket::from_chunk_column(
-                            x,
-                            z,
-                            column
-                        )));
-                    }
-                }
-
 
                 // Send the player position and look packet
                 let x = player.position.x;
@@ -124,22 +83,6 @@ impl ConnectionStateTrait for PlayState {
                     yaw: ValueType::Absolute(yaw),
                     pitch: ValueType::Absolute(pitch),
                     teleport_id: random(),
-                }));
-
-                // Send a welcome message
-                queue.push(ClientboundPacket::ChatMessage(ChatMessagePacket {
-                    message: Chat::new(format!(
-                        "{} joined the game",
-                        player.username
-                    )),
-                    sender: Uuid::nil(),
-                    position: ChatPosition::SystemMessage,
-                }));
-
-                // Tell player where they are
-                queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
-                    chunk_x: player_chunk_x,
-                    chunk_z: player_chunk_z
                 }));
 
                 Ok((queue, ConnectionStateTransition::Remain))

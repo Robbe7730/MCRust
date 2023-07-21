@@ -4,6 +4,7 @@ mod dimension_codec;
 mod entity;
 mod player;
 mod server_settings;
+mod recipe;
 
 pub use biome::*;
 pub use dimension::*;
@@ -11,9 +12,11 @@ pub use dimension_codec::*;
 pub use entity::*;
 pub use player::*;
 pub use server_settings::*;
+pub use recipe::*;
 
 use crate::error_type::ErrorType;
 use crate::Eid;
+use crate::nbt::NBTTag;
 use crate::world::World;
 
 use std::collections::HashMap;
@@ -26,6 +29,7 @@ pub struct ServerData {
     pub settings: ServerSettings,
     pub player_eids: Arc<RwLock<HashMap<Uuid, u32>>>,
     pub dimension_codec: DimensionCodec,
+    pub recipies: Vec<Recipe>,
 }
 
 impl ServerData {
@@ -41,6 +45,7 @@ impl ServerData {
             settings: ServerSettings::dummy(),
             player_eids: Arc::new(RwLock::new(HashMap::new())),
             dimension_codec,
+            recipies: Self::load_recipies(),
         }
     }
 
@@ -68,5 +73,33 @@ impl ServerData {
             })?
             .insert(uuid, eid);
         Ok(eid)
+    }
+
+    pub fn load_recipies() -> Vec<Recipe> {
+        // TODO implement this
+        return vec![
+            Recipe {
+                id: "minecraft:test".to_string(),
+                data: RecipeData::CraftingShapeless(
+                    "test1".to_string(),
+                    vec![
+                        vec![
+                            Slot {
+                                present: true,
+                                item_id: Some(9),
+                                count: Some(1),
+                                nbt: Some(NBTTag::End)
+                            }
+                        ]
+                    ], 
+                    Slot {
+                        present: true,
+                        item_id: Some(9),
+                        count: Some(2),
+                        nbt: Some(NBTTag::End)
+                    }
+                )
+            }
+        ]
     }
 }

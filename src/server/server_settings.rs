@@ -30,7 +30,7 @@ impl ServerSettings {
             motd: format!("Hello from Rust"),
             online: false,
             is_hardcore: false,
-            default_gamemode: Gamemode::Creative,
+            default_gamemode: Gamemode::Survival,
             worlds,
             selected_world,
             view_distance: 16,
