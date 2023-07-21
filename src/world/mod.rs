@@ -35,9 +35,9 @@ impl World {
     }
 
     // x, y, z are chunk indices (= position // 16)
-    pub fn get_chunk_section(&self, x: isize, y: isize, z: isize) -> ChunkSection {
+    pub fn get_chunk_section(&self, _x: isize, _y: isize, _z: isize) -> ChunkSection {
         // TODO: actually implement this
-        let mut chunk = [0u16; 4096];
+        let chunk = [0u16; 4096];
 
         return ChunkSection::from(chunk);
     }

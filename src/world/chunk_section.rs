@@ -33,7 +33,7 @@ impl ChunkSection {
     }
 
     pub fn get_biomes(&self) -> Vec<i32> {
-        let mut ret = vec![0; 4*4*4];
+        let ret = vec![0; 4*4*4];
         return ret;
     }
 

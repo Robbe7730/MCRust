@@ -9,6 +9,7 @@ pub mod pong;
 pub mod status_response;
 pub mod chunk_data;
 pub mod update_view_position;
+pub mod plugin_message;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -21,6 +22,7 @@ pub use pong::*;
 pub use status_response::*;
 pub use chunk_data::*;
 pub use update_view_position::*;
+pub use plugin_message::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -37,6 +39,7 @@ pub enum ClientboundPacket {
     KeepAlive(KeepAlivePacket),
     ChunkData(ChunkDataPacket),
     UpdateViewPosition(UpdateViewPositionPacket),
+    PluginMessage(PluginMessagePacket),
 }
 
 pub trait Clientbound {
@@ -57,6 +60,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::KeepAlive(p) => p.writer(),
             ClientboundPacket::ChunkData(p) => p.writer(),
             ClientboundPacket::UpdateViewPosition(p) => p.writer(),
+            ClientboundPacket::PluginMessage(p) => p.writer(),
         }
     }
 }

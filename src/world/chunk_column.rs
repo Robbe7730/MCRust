@@ -18,7 +18,7 @@ impl From<Vec<ChunkSection>> for ChunkColumn {
 
 impl ChunkColumn {
     pub fn get_heightmaps(&self) -> NBTTag {
-        let mut heightmaps = HashMap::new();
+        let heightmaps = HashMap::new();
 
         // TODO: heightmaps
         // heightmaps.insert("MOTION_BLOCKING", NBTTag::LongArray(vec![0; 16*16]));

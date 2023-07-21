@@ -7,6 +7,7 @@ use crate::chat::ChatPosition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::nbt::NBTReader;
+use crate::packets::packet_writer::PacketWriter;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::Eid;
 use crate::Server;
@@ -65,9 +66,36 @@ impl ConnectionStateTrait for PlayState {
                 })?;
                 let player = entity.as_player()?;
 
+                // Send the brand
+                let version = server_lock.settings.version.clone();
+                let mut brand_data = PacketWriter::to_varint(version.len().try_into().unwrap());
+                brand_data.append(&mut version.into_bytes());
+                queue.push(ClientboundPacket::PluginMessage(PluginMessagePacket {
+                    channel: "minecraft:brand".to_string(),
+                    data: brand_data,
+                }));
+
                 // Send the held item change packet
                 let slot = player.selected_slot;
                 queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket { slot }));
+
+                // Send chunks
+                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
+                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
+                for x in -8i32..8 {
+                    for z in -8i32..8 {
+                        let column = world.get_chunk_column(
+                            (player_chunk_x + x).try_into().unwrap(),
+                            (player_chunk_z + z).try_into().unwrap(),
+                        );
+                        queue.push(ClientboundPacket::ChunkData(ChunkDataPacket::from_chunk_column(
+                            x,
+                            z,
+                            column
+                        )));
+                    }
+                }
+
 
                 // Send the player position and look packet
                 let x = player.position.x;
@@ -95,26 +123,10 @@ impl ConnectionStateTrait for PlayState {
                 }));
 
                 // Tell player where they are
-                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
-                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
                 queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
                     chunk_x: player_chunk_x,
                     chunk_z: player_chunk_z
                 }));
-
-                for x in -8i32..8 {
-                    for z in -8i32..8 {
-                        let column = world.get_chunk_column(
-                            (player_chunk_x + x).try_into().unwrap(),
-                            (player_chunk_z + z).try_into().unwrap(),
-                        );
-                        queue.push(ClientboundPacket::ChunkData(ChunkDataPacket::from_chunk_column(
-                            x,
-                            z,
-                            column
-                        )));
-                    }
-                }
 
                 Ok((queue, ConnectionStateTransition::Remain))
             }
