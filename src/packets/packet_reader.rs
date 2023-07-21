@@ -94,6 +94,9 @@ impl PacketReader {
             0x13 => Ok(ServerboundPacket::PlayerPositionAndRotation(
                 PlayerPositionAndRotationPacket::from_reader(self)?
             )),
+            0x1e => Ok(ServerboundPacket::SetRecipeBookState(
+                SetRecipeBookStatePacket::from_reader(self)?
+            )),
             0x25 => Ok(ServerboundPacket::HeldItemChange(
                 HeldItemChangePacket::from_reader(self)?
             )),

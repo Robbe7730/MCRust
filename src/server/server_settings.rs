@@ -1,4 +1,5 @@
-use crate::{util::Gamemode, world::World};
+use crate::player::Gamemode;
+use crate::world::World;
 
 use std::collections::HashMap;
 

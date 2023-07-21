@@ -10,6 +10,7 @@ pub mod plugin_message;
 pub mod teleport_confirm;
 pub mod player_position_and_rotation;
 pub mod held_item_change;
+pub mod set_recipe_book_state;
 
 pub use chat_message::*;
 pub use client_settings::*;
@@ -23,6 +24,7 @@ pub use plugin_message::*;
 pub use teleport_confirm::*;
 pub use player_position_and_rotation::*;
 pub use held_item_change::*;
+pub use set_recipe_book_state::*;
 
 use super::packet_reader::PacketReader;
 
@@ -42,6 +44,7 @@ pub enum ServerboundPacket {
     TeleportConfirm(TeleportConfirmPacket),
     PlayerPositionAndRotation(PlayerPositionAndRotationPacket),
     HeldItemChange(HeldItemChangePacket),
+    SetRecipeBookState(SetRecipeBookStatePacket),
 }
 
 pub trait Serverbound {

@@ -7,8 +7,8 @@ use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::packets::packet_writer::PacketWriter;
 use crate::packets::serverbound::ServerboundPacket;
+use crate::player::Player;
 use crate::world::World;
-use crate::util::offline_player_uuid;
 use crate::Eid;
 use crate::Server;
 
@@ -49,7 +49,7 @@ impl ConnectionStateTrait for LoginState {
                 if server_lock.settings.online {
                     return Err(ErrorType::Fatal(format!("Online mode is not implemented")));
                 } else {
-                    uuid = offline_player_uuid(&packet.username);
+                    uuid = Player::offline_player_uuid(&packet.username);
                 }
 
                 // First reply

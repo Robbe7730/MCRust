@@ -1,4 +1,4 @@
-use super::Player;
+use crate::player::Player;
 
 use crate::error_type::ErrorType;
 

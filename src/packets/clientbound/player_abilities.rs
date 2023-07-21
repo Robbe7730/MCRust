@@ -1,4 +1,4 @@
-use crate::server::{Abilities, Player};
+use crate::player::{Abilities, Player};
 use crate::packets::packet_writer::PacketWriter;
 
 use super::Clientbound;

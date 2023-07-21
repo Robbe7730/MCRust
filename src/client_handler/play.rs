@@ -9,6 +9,7 @@ use crate::chat::ChatPosition;
 use crate::error_type::ErrorType;
 use crate::packets::clientbound::*;
 use crate::nbt::NBTReader;
+use crate::packets::serverbound::RecipeBook;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::Eid;
 use crate::Server;
@@ -198,6 +199,46 @@ impl ConnectionStateTrait for PlayState {
                 let player = entity.as_player_mut()?;
 
                 player.selected_slot = packet.slot.try_into().unwrap();
+
+                Ok((queue, ConnectionStateTransition::Remain))
+            }
+            ServerboundPacket::SetRecipeBookState(p) => {
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+
+                // Get the player
+                let entity_arc = world
+                    .get_entity(self.player_eid)?
+                    .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
+                let mut entity = entity_arc.write().map_err(|e| {
+                    ErrorType::Fatal(format!(
+                        "Could not lock player for writing: {}",
+                        e.to_string()
+                    ))
+                })?;
+                let player = entity.as_player_mut()?;
+
+                match p.book_id {
+                    RecipeBook::CraftingTable => {
+                        player.recipe_book_state.crafting_table_open = p.book_open;
+                        player.recipe_book_state.crafting_table_filter = p.filter_active;
+                    }
+                    RecipeBook::Furnace => {
+                        player.recipe_book_state.furnace_open = p.book_open;
+                        player.recipe_book_state.furnace_filter = p.filter_active;
+                    }
+                    RecipeBook::BlastFurnace => {
+                        player.recipe_book_state.blast_furnace_open = p.book_open;
+                        player.recipe_book_state.blast_furnace_filter = p.filter_active;
+                    }
+                    RecipeBook::Smoker => {
+                        player.recipe_book_state.smoker_open = p.book_open;
+                        player.recipe_book_state.smoker_filter = p.filter_active;
+                    }
+                }
 
                 Ok((queue, ConnectionStateTransition::Remain))
             }

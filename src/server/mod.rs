@@ -2,7 +2,6 @@ mod biome;
 mod dimension;
 mod dimension_codec;
 mod entity;
-mod player;
 mod server_settings;
 mod recipe;
 
@@ -10,13 +9,13 @@ pub use biome::*;
 pub use dimension::*;
 pub use dimension_codec::*;
 pub use entity::*;
-pub use player::*;
 pub use server_settings::*;
 pub use recipe::*;
 
 use crate::error_type::ErrorType;
 use crate::Eid;
 use crate::nbt::NBTTag;
+use crate::player::Player;
 use crate::world::World;
 
 use std::collections::HashMap;

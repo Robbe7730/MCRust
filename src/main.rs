@@ -4,8 +4,8 @@ mod error_type;
 mod nbt;
 mod packets;
 mod server;
-mod util;
 mod world;
+mod player;
 
 use client_handler::ClientHandler;
 use packets::clientbound::ClientboundPacket;

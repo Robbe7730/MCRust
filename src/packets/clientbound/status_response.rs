@@ -2,7 +2,7 @@ use super::super::packet_writer::PacketWriter;
 use super::super::Clientbound;
 
 use crate::chat::Chat;
-use crate::server::Player;
+use crate::player::Player;
 
 use serde::Serialize;
 use serde_json::json;

@@ -4,7 +4,7 @@ use super::super::Clientbound;
 use crate::nbt::NamedNBTTag;
 use crate::server::Dimension;
 use crate::server::DimensionCodec;
-use crate::util::Gamemode;
+use crate::player::Gamemode;
 
 use std::convert::TryInto;
 
