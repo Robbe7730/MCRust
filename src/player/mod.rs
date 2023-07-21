@@ -1,12 +1,14 @@
 mod abilities;
 mod gamemode;
 
+use std::{collections::HashMap, time::Instant};
+
 pub use abilities::*;
 pub use gamemode::*;
 
 use uuid::Uuid;
 
-use crate::server::Dimension;
+use crate::{server::Dimension, chat::Chat};
 
 #[derive(Clone)]
 pub struct Position {
@@ -50,6 +52,10 @@ pub struct Player {
     pub recipe_book_state: RecipeBookState,
     pub unlocked_recipes: Vec<String>,
     pub op_level: OPLevel,
+    pub properties: HashMap<String, (String, Option<String>)>,
+    pub last_keepalive_sent: Option<(i64, Instant)>,
+    pub latency: Option<i32>,
+    pub displayname: Option<Chat>,
 }
 
 // Names from https://minecraft.fandom.com/wiki/Permission_level#Java_Edition
@@ -101,6 +107,10 @@ impl Player {
             },
             unlocked_recipes: vec![],
             op_level,
+            properties: HashMap::new(),
+            last_keepalive_sent: None,
+            latency: None,
+            displayname: None,
         }
     }
 

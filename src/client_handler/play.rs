@@ -17,14 +17,15 @@ use crate::player::OPLevel;
 
 use std::convert::TryInto;
 use std::sync::Arc;
+use std::time::Instant;
 
 #[derive(Debug, PartialEq)]
 pub struct PlayState {
-    player_eid: i32,
+    pub player_eid: i32,
 }
 
 impl ConnectionStateTrait for PlayState {
-    fn from_state(prev_state: ConnectionState) -> Result<Self, ErrorType> {
+    fn from_state(prev_state: &ConnectionState) -> Result<Self, ErrorType> {
         match prev_state {
             ConnectionState::Login(login_state) => Ok(Self {
                 player_eid: login_state.player_eid,
@@ -95,11 +96,24 @@ impl ConnectionStateTrait for PlayState {
 
                 // TEMP: unlock all exisiting recipes
                 player.unlocked_recipes = server_lock.recipes.iter().map(|r| r.id.clone()).collect();
+
                 // Send unlocked recipes
                 queue.push(ClientboundPacket::UnlockRecipes(UnlockRecipesPacket::init_from_player(&player)));
 
+                // Send Player Info
+                queue.push(ClientboundPacket::PlayerInfo(PlayerInfoPacket::add_players(vec![player])));
+
+                // Tell player where they are
+                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
+                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
+                queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
+                    chunk_x: player_chunk_x,
+                    chunk_z: player_chunk_z
+                }));
+
                 // --v-- temporary, unordered packets for testing --v--
 
+                // TODO: Fix broadcasting
                 // Send a welcome message
                 queue.push(ClientboundPacket::ChatMessage(ChatMessagePacket {
                     message: Chat::new(format!(
@@ -108,14 +122,6 @@ impl ConnectionStateTrait for PlayState {
                     )),
                     sender: Uuid::nil(),
                     position: ChatPosition::SystemMessage,
-                }));
-
-                // Tell player where they are
-                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
-                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
-                queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
-                    chunk_x: player_chunk_x,
-                    chunk_z: player_chunk_z
                 }));
 
                 for x in -8i32..8 {
@@ -154,7 +160,7 @@ impl ConnectionStateTrait for PlayState {
                     .settings
                     .worlds
                     .get(&server_lock.settings.selected_world)
-                    .ok_or(ErrorType::Fatal("Invalid selected".to_string()))?;
+                    .ok_or(ErrorType::Fatal("Invalid selected world".to_string()))?;
 
                 // Get the player
                 let entity_arc = world
@@ -177,8 +183,41 @@ impl ConnectionStateTrait for PlayState {
                 server.send_to_all(chat_packet);
                 Ok((queue, ConnectionStateTransition::Remain))
             }
-            ServerboundPacket::KeepAlive(_packet) => {
-                // TODO: validate response id == sent response id
+            ServerboundPacket::KeepAlive(packet) => {
+                let now = Instant::now();
+                let world = server_lock
+                    .settings
+                    .worlds
+                    .get(&server_lock.settings.selected_world)
+                    .ok_or(ErrorType::Fatal("Invalid selected world".to_string()))?;
+
+                // Get the player
+                let entity_arc = world
+                    .get_entity(self.player_eid)?
+                    .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
+                let mut entity = entity_arc.write().map_err(|e| {
+                    ErrorType::Fatal(format!(
+                        "Could not lock player for writing: {}",
+                        e.to_string()
+                    ))
+                })?;
+                let mut player = entity.as_player_mut()?;
+
+                if let Some((last_id, last_time)) = player.last_keepalive_sent {
+                    if packet.id != last_id {
+                        eprintln!("Got keepalive id {}, but expected {}, discarding...", packet.id, last_id);
+                    } else {
+                        let latency = (now - last_time).as_millis().try_into().unwrap();
+                        player.latency = Some(latency);
+                        // Send latency update
+                        queue.push(ClientboundPacket::PlayerInfo(
+                            PlayerInfoPacket::UpdateLatency(vec![(player.uuid, latency)])
+                        ));
+                    }
+                } else {
+                    eprintln!("Got keepalive with id {} without having sent one...", packet.id);
+                }
+
                 Ok((queue, ConnectionStateTransition::Remain))
             }
             ServerboundPacket::PluginMessage(packet) => {

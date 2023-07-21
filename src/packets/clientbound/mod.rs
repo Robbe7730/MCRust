@@ -17,6 +17,7 @@ pub mod unlock_recipes;
 pub mod tags;
 pub mod entity_status;
 pub mod declare_commands;
+pub mod player_info;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -37,6 +38,7 @@ pub use unlock_recipes::*;
 pub use tags::*;
 pub use entity_status::*;
 pub use declare_commands::*;
+pub use player_info::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -61,6 +63,7 @@ pub enum ClientboundPacket {
     Tags(TagsPacket),
     EntityStatus(EntityStatusPacket),
     DeclareCommands(DeclareCommandsPacket),
+    PlayerInfo(PlayerInfoPacket),
 }
 
 pub trait Clientbound {
@@ -89,6 +92,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::Tags(p) => p.writer(),
             ClientboundPacket::EntityStatus(p) => p.writer(),
             ClientboundPacket::DeclareCommands(p) => p.writer(),
+            ClientboundPacket::PlayerInfo(p) => p.writer(),
         }
     }
 }

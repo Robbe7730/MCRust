@@ -32,11 +32,11 @@ impl Clientbound for JoinGamePacket {
         let mut writer = PacketWriter::new(0x24);
         writer.add_signed_int(self.entity_id);
         writer.add_unsigned_byte(self.is_hardcore as u8);
-        writer.add_unsigned_byte(self.gamemode.to_byte());
+        writer.add_unsigned_byte(self.gamemode as u8);
         writer.add_signed_byte(
             self.previous_gamemode
                 .as_ref()
-                .map_or(-1, |gm| gm.to_byte() as i8),
+                .map_or(-1, |gm| *gm as i8),
         );
         writer.add_varint(self.world_names.len().try_into().expect("Too many worlds"));
         for world_name in &self.world_names {

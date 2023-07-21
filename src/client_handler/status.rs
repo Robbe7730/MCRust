@@ -18,7 +18,7 @@ use std::sync::Arc;
 pub struct StatusState {}
 
 impl ConnectionStateTrait for StatusState {
-    fn from_state(prev_state: ConnectionState) -> Result<Self, ErrorType> {
+    fn from_state(prev_state: &ConnectionState) -> Result<Self, ErrorType> {
         match prev_state {
             ConnectionState::Handshaking(_) => Ok(Self {}),
             x => Err(ErrorType::Fatal(format!(

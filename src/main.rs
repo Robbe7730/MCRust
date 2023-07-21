@@ -8,17 +8,18 @@ mod world;
 mod player;
 
 use client_handler::ClientHandler;
+use client_handler::ConnectionState;
 use packets::clientbound::ClientboundPacket;
+use packets::clientbound::KeepAlivePacket;
 use server::ServerData;
 
 use std::collections::HashMap;
 use std::net::TcpListener;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
 
 pub struct Server {
     data: Arc<Mutex<ServerData>>,
@@ -32,15 +33,10 @@ impl Server {
         // Set up keepalive ticks (in the future this could be game ticks)
         let server_arc_copy = server_arc.clone();
         thread::spawn(move || {
-            use crate::packets::clientbound::KeepAlivePacket;
             let twenty_seconds = Duration::new(20, 0);
             loop {
                 thread::sleep(twenty_seconds);
-                server_arc_copy.send_to_all(ClientboundPacket::KeepAlive(KeepAlivePacket {
-                    id: SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("Invalid system time").as_secs() as i64,
-                }));
+                server_arc_copy.send_keepalive();
             }
         });
 
@@ -76,6 +72,70 @@ impl Server {
             .expect("Could not lock connection table")
             .values()
             .for_each(|x| x.send_packet(packet.clone()).unwrap());
+    }
+
+    pub fn send_keepalive(&self) {
+        self.connections
+            .lock()
+            .expect("Could not lock connection table")
+            .values()
+            .for_each(|x| {
+                // This whole function is to get the player object for the ClientHandler
+                // This is a mess...
+                let player_eid;
+                {
+                    let state_lock = x.state.lock().expect("Could not lock state");
+                    if let ConnectionState::Handshaking(_) = *state_lock {
+                        return;
+                    }
+                    if let ConnectionState::Status(_) = *state_lock {
+                        return;
+                    }
+                    player_eid = match state_lock.deref() {
+                        ConnectionState::Play(playstate) => playstate.player_eid,
+                        ConnectionState::Login(loginstate) => loginstate.player_eid,
+                        _ => unreachable!()
+                    };
+                }
+                let maybe_server_data_lock = self.data.lock();
+
+                if maybe_server_data_lock.is_err() {
+                    eprintln!("Could not lock server data");
+                    return;
+                }
+
+                let server_data_lock = maybe_server_data_lock.unwrap();
+                let world = server_data_lock.settings.worlds
+                    .get(&server_data_lock.settings.selected_world)
+                    .expect("Invalid world selected");
+
+                let maybe_entity_arc = world.get_entity(player_eid);
+                if maybe_entity_arc.is_err() {
+                    eprintln!("Player could not be found");
+                    return;
+                }
+                let maybe_entity_res = maybe_entity_arc.unwrap();
+                if maybe_entity_res.is_none() {
+                    eprintln!("Player does not exist");
+                    return;
+                }
+                let maybe_entity = maybe_entity_res.unwrap();
+                let maybe_entity_lock = maybe_entity.write();
+                if maybe_entity_lock.is_err() {
+                    eprintln!("Could not lock player for writing");
+                    return
+                }
+                let mut maybe_player_entity = maybe_entity_lock.unwrap();
+                let maybe_player = maybe_player_entity.as_player_mut();
+                if maybe_player.is_err() {
+                    eprintln!("Could not load player");
+                    return
+                }
+                let player = maybe_player.unwrap();
+
+                let packet = ClientboundPacket::KeepAlive(KeepAlivePacket::for_player(player));
+                x.send_packet(packet.clone()).unwrap()
+            });
     }
 }
 

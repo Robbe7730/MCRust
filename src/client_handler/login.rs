@@ -20,7 +20,7 @@ pub struct LoginState {
 }
 
 impl ConnectionStateTrait for LoginState {
-    fn from_state(prev_state: ConnectionState) -> Result<Self, ErrorType> {
+    fn from_state(prev_state: &ConnectionState) -> Result<Self, ErrorType> {
         match prev_state {
             ConnectionState::Handshaking(_) => Ok(Self { player_eid: 0 }),
             x => Err(ErrorType::Fatal(format!(

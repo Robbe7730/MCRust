@@ -1,19 +1,8 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub enum Gamemode {
-    Survival,
-    Creative,
-    Adventure,
-    Spectator,
-}
-
-impl Gamemode {
-    pub fn to_byte(&self) -> u8 {
-        match &self {
-            Gamemode::Survival => 0,
-            Gamemode::Creative => 1,
-            Gamemode::Adventure => 2,
-            Gamemode::Spectator => 3,
-        }
-    }
+    Survival = 0,
+    Creative = 1,
+    Adventure = 2,
+    Spectator = 3,
 }

@@ -12,6 +12,7 @@ use crate::Server;
 
 use std::net::TcpStream;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 pub use handshaking::HandshakingState;
 pub use login::LoginState;
@@ -48,7 +49,7 @@ trait ConnectionStateTrait {
         server: Arc<Server>,
     ) -> Result<(Vec<ClientboundPacket>, ConnectionStateTransition), ErrorType>;
 
-    fn from_state(prev_state: ConnectionState) -> Result<Self, ErrorType>
+    fn from_state(prev_state: &ConnectionState) -> Result<Self, ErrorType>
     where
         Self: Sized;
 }
@@ -83,6 +84,7 @@ impl ConnectionStateTag {
 pub struct ClientHandler {
     stream: TcpStream,
     server: Arc<Server>,
+    pub state: Mutex<ConnectionState>,
 }
 
 impl ClientHandler {
@@ -90,6 +92,7 @@ impl ClientHandler {
         Self {
             stream,
             server,
+            state: Mutex::new(ConnectionState::Handshaking(HandshakingState {})),
         }
     }
 
@@ -103,7 +106,6 @@ impl ClientHandler {
     }
 
     pub fn run(&self) {
-        let mut state: ConnectionState = ConnectionState::Handshaking(HandshakingState {});
         let mut state_tag = ConnectionStateTag::Handshaking;
         let mut reader = PacketReader::new(
             self.stream.try_clone().expect("Could not clone TCP stream"),
@@ -136,10 +138,15 @@ impl ClientHandler {
                 ConnectionStateTag::Exit => "E",
                 ConnectionStateTag::Login => "L",
             }, packet);
-            let result = state.handle_packet(
-                packet,
-                self.server.clone(),
-            );
+
+            let result;
+            {
+                let mut state_lock = self.state.lock().expect("Could not lock state");
+                result = state_lock.handle_packet(
+                    packet,
+                    self.server.clone(),
+                );
+            }
 
             match result {
                 Ok((packets, mut transition)) => {
@@ -167,28 +174,31 @@ impl ClientHandler {
                             }
                         }
                     }
-                    match transition {
-                        ConnectionStateTransition::TransitionTo(new_tag) => {
-                            state = match new_tag {
-                                ConnectionStateTag::Handshaking => ConnectionState::Handshaking(
-                                    HandshakingState::from_state(state).unwrap(),
-                                ),
-                                ConnectionStateTag::Status => {
-                                    ConnectionState::Status(StatusState::from_state(state).unwrap())
-                                }
-                                ConnectionStateTag::Login => {
-                                    ConnectionState::Login(LoginState::from_state(state).unwrap())
-                                }
-                                ConnectionStateTag::Play => {
-                                    ConnectionState::Play(PlayState::from_state(state).unwrap())
-                                }
-                                ConnectionStateTag::Exit => {
-                                    break;
-                                }
-                            };
-                            state_tag = new_tag;
+                    {
+                        let mut state_lock = self.state.lock().expect("Could not lock state");
+                        match transition {
+                            ConnectionStateTransition::TransitionTo(new_tag) => {
+                                *state_lock = match new_tag {
+                                    ConnectionStateTag::Handshaking => ConnectionState::Handshaking(
+                                        HandshakingState::from_state(&state_lock).unwrap(),
+                                    ),
+                                    ConnectionStateTag::Status => {
+                                        ConnectionState::Status(StatusState::from_state(&state_lock).unwrap())
+                                    }
+                                    ConnectionStateTag::Login => {
+                                        ConnectionState::Login(LoginState::from_state(&state_lock).unwrap())
+                                    }
+                                    ConnectionStateTag::Play => {
+                                        ConnectionState::Play(PlayState::from_state(&state_lock).unwrap())
+                                    }
+                                    ConnectionStateTag::Exit => {
+                                        break;
+                                    }
+                                };
+                                state_tag = new_tag;
+                            }
+                            ConnectionStateTransition::Remain => {}
                         }
-                        ConnectionStateTransition::Remain => {}
                     }
                 },
                 Err(ErrorType::Fatal(msg)) => {

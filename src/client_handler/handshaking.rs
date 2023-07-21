@@ -16,7 +16,7 @@ use std::sync::Arc;
 pub struct HandshakingState {}
 
 impl ConnectionStateTrait for HandshakingState {
-    fn from_state(_state: ConnectionState) -> Result<Self, ErrorType> {
+    fn from_state(_state: &ConnectionState) -> Result<Self, ErrorType> {
         Err(ErrorType::Fatal(format!(
             "Cannot go back into Handshaking state"
         )))
