@@ -13,6 +13,7 @@ pub mod plugin_message;
 pub mod change_difficulty;
 pub mod player_abilities;
 pub mod declare_recipies;
+pub mod unlock_recipies;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -29,6 +30,7 @@ pub use plugin_message::*;
 pub use change_difficulty::*;
 pub use player_abilities::*;
 pub use declare_recipies::*;
+pub use unlock_recipies::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -49,6 +51,7 @@ pub enum ClientboundPacket {
     ChangeDifficulty(ChangeDifficultyPacket),
     PlayerAbilities(PlayerAbilitiesPacket),
     DeclareRecipies(DeclareRecipiesPacket),
+    UnlockRecipies(UnlockRecipiesPacket),
 }
 
 pub trait Clientbound {
@@ -73,6 +76,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::ChangeDifficulty(p) => p.writer(),
             ClientboundPacket::PlayerAbilities(p) => p.writer(),
             ClientboundPacket::DeclareRecipies(p) => p.writer(),
+            ClientboundPacket::UnlockRecipies(p) => p.writer(),
         }
     }
 }

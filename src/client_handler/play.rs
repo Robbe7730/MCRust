@@ -1,4 +1,5 @@
 use rand::random;
+use uuid::Uuid;
 
 use super::ConnectionState;
 use super::ConnectionStateTrait;
@@ -55,13 +56,13 @@ impl ConnectionStateTrait for PlayState {
                 let entity_arc = world
                     .get_entity(self.player_eid)?
                     .ok_or(ErrorType::Fatal("Player does not exist".to_string()))?;
-                let entity = entity_arc.read().map_err(|e| {
+                let mut entity = entity_arc.write().map_err(|e| {
                     ErrorType::Fatal(format!(
-                        "Could not lock player for reading: {}",
+                        "Could not lock player for writing: {}",
                         e.to_string()
                     ))
                 })?;
-                let player = entity.as_player()?;
+                let player = entity.as_player_mut()?;
 
                 // Send Held Item
                 queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket::from_player(&player)));
@@ -70,6 +71,49 @@ impl ConnectionStateTrait for PlayState {
                 queue.push(ClientboundPacket::DeclareRecipies(DeclareRecipiesPacket {
                     recipies: server_lock.recipies.clone(),
                 }));
+
+                // TODO: Tags
+                // TODO: Entity Status
+                // TODO: Commands
+
+                // TEMP: unlock all exisiting recipies
+                player.unlocked_recipies = server_lock.recipies.iter().map(|r| r.id.clone()).collect();
+                // Send unlocked recipies
+                queue.push(ClientboundPacket::UnlockRecipies(UnlockRecipiesPacket::init_from_player(&player)));
+
+                // --v-- temporary, unordered packets for testing --v--
+
+                // Send a welcome message
+                queue.push(ClientboundPacket::ChatMessage(ChatMessagePacket {
+                    message: Chat::new(format!(
+                        "{} joined the game",
+                        player.username
+                    )),
+                    sender: Uuid::nil(),
+                    position: ChatPosition::SystemMessage,
+                }));
+
+                // Tell player where they are
+                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
+                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
+                queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
+                    chunk_x: player_chunk_x,
+                    chunk_z: player_chunk_z
+                }));
+
+                for x in -8i32..8 {
+                    for z in -8i32..8 {
+                        let column = world.get_chunk_column(
+                            (player_chunk_x + x).try_into().unwrap(),
+                            (player_chunk_z + z).try_into().unwrap(),
+                        );
+                        queue.push(ClientboundPacket::ChunkData(ChunkDataPacket::from_chunk_column(
+                            x,
+                            z,
+                            column
+                        )));
+                    }
+                }
 
                 // Send the player position and look packet
                 let x = player.position.x;
