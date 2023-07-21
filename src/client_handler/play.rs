@@ -81,6 +81,9 @@ impl ConnectionStateTrait for PlayState {
                     difficulty_locked: world.difficulty_locked,
                 }));
 
+                // Send player abilities
+                queue.push(ClientboundPacket::PlayerAbilities(PlayerAbilitiesPacket::from_player(player)));
+
                 // -----------------------
                 // Everything above this line follows the normal login sequence
                 // https://wiki.vg/Protocol_FAQ#What.27s_the_normal_login_sequence_for_a_client.3F
