@@ -33,7 +33,8 @@ impl ChunkSection {
     }
 
     pub fn get_biomes(&self) -> Vec<i32> {
-        return vec![0; 4*4*4];
+        let mut ret = vec![0; 4*4*4];
+        return ret;
     }
 
     pub fn get_block_entities(&self) -> Vec<NBTTag> {

@@ -21,8 +21,8 @@ impl ChunkColumn {
         let mut heightmaps = HashMap::new();
 
         // TODO: heightmaps
-        heightmaps.insert("MOTION_BLOCKING", NBTTag::LongArray(vec![]));
-        heightmaps.insert("WORLD_SURFACE", NBTTag::LongArray(vec![]));
+        // heightmaps.insert("MOTION_BLOCKING", NBTTag::LongArray(vec![0; 16*16]));
+        // heightmaps.insert("WORLD_SURFACE", NBTTag::LongArray(vec![0; 16*16]));
 
         heightmaps.into()
     }

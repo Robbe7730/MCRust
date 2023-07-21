@@ -24,7 +24,7 @@ pub struct World {
 impl World {
     pub fn dummy() -> Self {
         Self {
-            name: "wereld".to_string(),
+            name: "overworld".to_string(),
             seed: [0; 32],
             reduced_debug_info: false,
             enable_respawn_screen: true,
@@ -38,12 +38,6 @@ impl World {
     pub fn get_chunk_section(&self, x: isize, y: isize, z: isize) -> ChunkSection {
         // TODO: actually implement this
         let mut chunk = [0u16; 4096];
-
-        chunk[
-            (x.unsigned_abs() % 16) +
-            (z.unsigned_abs() % 16)*16 +
-            (y.unsigned_abs() % 16)*256
-        ] = 1;
 
         return ChunkSection::from(chunk);
     }

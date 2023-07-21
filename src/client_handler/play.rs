@@ -84,7 +84,7 @@ impl ConnectionStateTrait for PlayState {
                     teleport_id: random(),
                 }));
 
-                // Send a test message
+                // Send a welcome message
                 queue.push(ClientboundPacket::ChatMessage(ChatMessagePacket {
                     message: Chat::new(format!(
                         "{} joined the game",
@@ -95,16 +95,18 @@ impl ConnectionStateTrait for PlayState {
                 }));
 
                 // Tell player where they are
+                let player_chunk_x = (player.position.x / 16.0).floor() as i32;
+                let player_chunk_z = (player.position.z / 16.0).floor() as i32;
                 queue.push(ClientboundPacket::UpdateViewPosition(UpdateViewPositionPacket {
-                    chunk_x: (player.position.x / 16.0).floor() as i32,
-                    chunk_z: (player.position.z / 16.0).floor() as i32,
+                    chunk_x: player_chunk_x,
+                    chunk_z: player_chunk_z
                 }));
 
-                for x in -16i32..16 {
-                    for z in -16i32..16 {
+                for x in -8i32..8 {
+                    for z in -8i32..8 {
                         let column = world.get_chunk_column(
-                            x.try_into().unwrap(),
-                            z.try_into().unwrap()
+                            (player_chunk_x + x).try_into().unwrap(),
+                            (player_chunk_z + z).try_into().unwrap(),
                         );
                         queue.push(ClientboundPacket::ChunkData(ChunkDataPacket::from_chunk_column(
                             x,
