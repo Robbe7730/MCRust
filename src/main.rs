@@ -20,8 +20,6 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
-pub type Eid = u32;
-
 pub struct Server {
     data: Arc<Mutex<ServerData>>,
     connections: Arc<Mutex<HashMap<usize, Arc<ClientHandler>>>>,

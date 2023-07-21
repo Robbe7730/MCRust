@@ -6,11 +6,13 @@ pub use chunk_section::ChunkSection;
 pub use chunk_column::ChunkColumn;
 pub use difficulty::*;
 
-use std::{sync::{Arc, RwLock}, collections::HashMap};
+use std::sync::{Arc, RwLock};
+use std::collections::HashMap;
 
 use rand::random;
 
-use crate::{Eid, error_type::ErrorType, server::Entity};
+use crate::error_type::ErrorType;
+use crate::server::Entity;
 
 #[derive(Clone)]
 pub struct World {
@@ -20,7 +22,7 @@ pub struct World {
     pub enable_respawn_screen: bool,
     pub is_debug: bool,
     pub is_flat: bool,
-    pub entities: Arc<RwLock<HashMap<u32, Arc<RwLock<Entity>>>>>,
+    pub entities: Arc<RwLock<HashMap<i32, Arc<RwLock<Entity>>>>>,
     pub difficulty:  Difficulty,
     pub difficulty_locked: bool,
 }
@@ -56,7 +58,7 @@ impl World {
         return ret.into();
     }
 
-    pub fn get_entity(&self, eid: Eid) -> Result<Option<Arc<RwLock<Entity>>>, ErrorType> {
+    pub fn get_entity(&self, eid: i32) -> Result<Option<Arc<RwLock<Entity>>>, ErrorType> {
         Ok(self
             .entities
             .read()
@@ -70,8 +72,8 @@ impl World {
             .cloned())
     }
 
-    pub fn register_entity(&self, entity: Entity) -> Result<u32, ErrorType> {
-        let mut eid: u32 = random();
+    pub fn register_entity(&self, entity: Entity) -> Result<i32, ErrorType> {
+        let mut eid: i32 = random();
         while self
             .entities
             .read()

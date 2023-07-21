@@ -13,9 +13,9 @@ pub use server_settings::*;
 pub use recipe::*;
 
 use crate::error_type::ErrorType;
-use crate::Eid;
 use crate::nbt::NBTTag;
 use crate::packets::packet_writer::PacketWriter;
+use crate::player::OPLevel;
 use crate::player::Player;
 use crate::world::World;
 
@@ -51,7 +51,7 @@ pub struct Tags {
 
 pub struct ServerData {
     pub settings: ServerSettings,
-    pub player_eids: Arc<RwLock<HashMap<Uuid, u32>>>,
+    pub player_eids: Arc<RwLock<HashMap<Uuid, i32>>>,
     pub dimension_codec: DimensionCodec,
     pub recipes: Vec<Recipe>,
     pub tags: Tags,
@@ -75,13 +75,14 @@ impl ServerData {
         }
     }
 
-    pub fn load_or_create_player(&self, username: &String, uuid: Uuid) -> Result<Eid, ErrorType> {
+    pub fn load_or_create_player(&self, username: &String, uuid: Uuid) -> Result<i32, ErrorType> {
         // TODO: persistent player storage
         let player = Player::new(
             uuid,
             username.to_string(),
             self.settings.default_gamemode.clone(),
             self.dimension_codec.dimensions["mcrust:the_only_dimension"].clone(),
+            OPLevel::Owner,
         );
         let world: &World = self
             .settings

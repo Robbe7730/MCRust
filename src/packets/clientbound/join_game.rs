@@ -10,7 +10,7 @@ use std::convert::TryInto;
 
 #[derive(Debug, Clone)]
 pub struct JoinGamePacket {
-    pub entity_id: u32,
+    pub entity_id: i32,
     pub is_hardcore: bool,
     pub gamemode: Gamemode,
     pub previous_gamemode: Option<Gamemode>,
@@ -30,7 +30,7 @@ pub struct JoinGamePacket {
 impl Clientbound for JoinGamePacket {
     fn writer(&self) -> PacketWriter {
         let mut writer = PacketWriter::new(0x24);
-        writer.add_unsigned_int(self.entity_id);
+        writer.add_signed_int(self.entity_id);
         writer.add_unsigned_byte(self.is_hardcore as u8);
         writer.add_unsigned_byte(self.gamemode.to_byte());
         writer.add_signed_byte(

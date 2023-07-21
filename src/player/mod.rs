@@ -49,10 +49,27 @@ pub struct Player {
     pub fov_modifier: f32,
     pub recipe_book_state: RecipeBookState,
     pub unlocked_recipes: Vec<String>,
+    pub op_level: OPLevel,
+}
+
+// Names from https://minecraft.fandom.com/wiki/Permission_level#Java_Edition
+#[derive(Clone)]
+pub enum OPLevel {
+    Player = 0,
+    Moderator = 1,
+    Gamemaster = 2,
+    Admin = 3,
+    Owner = 4
 }
 
 impl Player {
-    pub fn new(uuid: Uuid, username: String, gamemode: Gamemode, dimension: Dimension) -> Self {
+    pub fn new(
+        uuid: Uuid,
+        username: String,
+        gamemode: Gamemode,
+        dimension: Dimension,
+        op_level: OPLevel,
+    ) -> Self {
         Self {
             uuid,
             username,
@@ -83,6 +100,7 @@ impl Player {
                 smoker_filter: false
             },
             unlocked_recipes: vec![],
+            op_level,
         }
     }
 

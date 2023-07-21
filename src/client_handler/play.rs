@@ -12,15 +12,15 @@ use crate::packets::clientbound::*;
 use crate::nbt::NBTReader;
 use crate::packets::serverbound::RecipeBook;
 use crate::packets::serverbound::ServerboundPacket;
-use crate::Eid;
 use crate::Server;
+use crate::player::OPLevel;
 
 use std::convert::TryInto;
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq)]
 pub struct PlayState {
-    player_eid: Eid,
+    player_eid: i32,
 }
 
 impl ConnectionStateTrait for PlayState {
@@ -75,7 +75,18 @@ impl ConnectionStateTrait for PlayState {
                 // Send tags
                 // queue.push(ClientboundPacket::Tags(TagsPacket::from_tags(&server_lock.tags)));
 
-                // TODO: Entity Status
+                // Send OP Level (Entity Status)
+                queue.push(ClientboundPacket::EntityStatus(EntityStatusPacket{
+                    entity_id: self.player_eid,
+                    entity_status: match player.op_level {
+                        OPLevel::Player => EntityStatus::PlayerOPLevel0,
+                        OPLevel::Moderator => EntityStatus::PlayerOPLevel1,
+                        OPLevel::Gamemaster => EntityStatus::PlayerOPLevel2,
+                        OPLevel::Admin => EntityStatus::PlayerOPLevel3,
+                        OPLevel::Owner => EntityStatus::PlayerOPLevel4,
+                    }
+                }));
+
                 // TODO: Commands
 
                 // TEMP: unlock all exisiting recipes

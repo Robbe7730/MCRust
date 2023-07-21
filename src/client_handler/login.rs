@@ -9,7 +9,6 @@ use crate::packets::packet_writer::PacketWriter;
 use crate::packets::serverbound::ServerboundPacket;
 use crate::player::Player;
 use crate::world::World;
-use crate::Eid;
 use crate::Server;
 
 use std::convert::TryInto;
@@ -17,7 +16,7 @@ use std::sync::Arc;
 
 #[derive(Debug, PartialEq)]
 pub struct LoginState {
-    pub player_eid: Eid,
+    pub player_eid: i32,
 }
 
 impl ConnectionStateTrait for LoginState {
