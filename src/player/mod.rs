@@ -48,7 +48,7 @@ pub struct Player {
     pub flying_speed: f32,
     pub fov_modifier: f32,
     pub recipe_book_state: RecipeBookState,
-    pub unlocked_recipies: Vec<String>,
+    pub unlocked_recipes: Vec<String>,
 }
 
 impl Player {
@@ -82,7 +82,7 @@ impl Player {
                 smoker_open: false,
                 smoker_filter: false
             },
-            unlocked_recipies: vec![],
+            unlocked_recipes: vec![],
         }
     }
 

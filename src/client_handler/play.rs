@@ -67,19 +67,19 @@ impl ConnectionStateTrait for PlayState {
                 // Send Held Item
                 queue.push(ClientboundPacket::HeldItemChange(HeldItemChangePacket::from_player(&player)));
 
-                // Send available recipies
-                queue.push(ClientboundPacket::DeclareRecipies(DeclareRecipiesPacket {
-                    recipies: server_lock.recipies.clone(),
+                // Send available recipes
+                queue.push(ClientboundPacket::DeclareRecipes(DeclareRecipesPacket {
+                    recipes: server_lock.recipes.clone(),
                 }));
 
                 // TODO: Tags
                 // TODO: Entity Status
                 // TODO: Commands
 
-                // TEMP: unlock all exisiting recipies
-                player.unlocked_recipies = server_lock.recipies.iter().map(|r| r.id.clone()).collect();
-                // Send unlocked recipies
-                queue.push(ClientboundPacket::UnlockRecipies(UnlockRecipiesPacket::init_from_player(&player)));
+                // TEMP: unlock all exisiting recipes
+                player.unlocked_recipes = server_lock.recipes.iter().map(|r| r.id.clone()).collect();
+                // Send unlocked recipes
+                queue.push(ClientboundPacket::UnlockRecipes(UnlockRecipesPacket::init_from_player(&player)));
 
                 // --v-- temporary, unordered packets for testing --v--
 

@@ -28,7 +28,7 @@ pub struct ServerData {
     pub settings: ServerSettings,
     pub player_eids: Arc<RwLock<HashMap<Uuid, u32>>>,
     pub dimension_codec: DimensionCodec,
-    pub recipies: Vec<Recipe>,
+    pub recipes: Vec<Recipe>,
 }
 
 impl ServerData {
@@ -44,7 +44,7 @@ impl ServerData {
             settings: ServerSettings::dummy(),
             player_eids: Arc::new(RwLock::new(HashMap::new())),
             dimension_codec,
-            recipies: Self::load_recipies(),
+            recipes: Self::load_recipes(),
         }
     }
 
@@ -74,7 +74,7 @@ impl ServerData {
         Ok(eid)
     }
 
-    pub fn load_recipies() -> Vec<Recipe> {
+    pub fn load_recipes() -> Vec<Recipe> {
         // TODO implement this
         return vec![
             Recipe {

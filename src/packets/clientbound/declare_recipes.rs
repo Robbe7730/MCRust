@@ -6,16 +6,16 @@ use crate::packets::packet_writer::PacketWriter;
 use super::Clientbound;
 
 #[derive(Debug, Clone)]
-pub struct DeclareRecipiesPacket {
-    pub recipies: Vec<Recipe>,
+pub struct DeclareRecipesPacket {
+    pub recipes: Vec<Recipe>,
 }
 
-impl Clientbound for DeclareRecipiesPacket {
+impl Clientbound for DeclareRecipesPacket {
     fn writer(&self) -> PacketWriter {
         let mut writer = PacketWriter::new(0x5A);
 
-        writer.add_varint(self.recipies.len().try_into().unwrap());
-        for recipe in self.recipies.iter() {
+        writer.add_varint(self.recipes.len().try_into().unwrap());
+        for recipe in self.recipes.iter() {
             recipe.write(&mut writer);
         }
 
