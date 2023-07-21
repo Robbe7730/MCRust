@@ -15,20 +15,46 @@ pub use recipe::*;
 use crate::error_type::ErrorType;
 use crate::Eid;
 use crate::nbt::NBTTag;
+use crate::packets::packet_writer::PacketWriter;
 use crate::player::Player;
 use crate::world::World;
 
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
 use std::sync::RwLock;
 
 use uuid::Uuid;
+
+#[derive(Debug, Clone)]
+pub struct Tag {
+    pub name: String,
+    pub entries: Vec<i32>,
+}
+
+impl Tag {
+    pub fn write(&self, writer: &mut PacketWriter) {
+        writer.add_string(&self.name);
+        writer.add_varint(self.entries.len().try_into().unwrap());
+        for entry in self.entries.iter() {
+            writer.add_varint(*entry);
+        }
+    }
+}
+
+pub struct Tags {
+    pub block_tags: Vec<Tag>,
+    pub item_tags: Vec<Tag>,
+    pub fluid_tags: Vec<Tag>,
+    pub entity_tags: Vec<Tag>,
+}
 
 pub struct ServerData {
     pub settings: ServerSettings,
     pub player_eids: Arc<RwLock<HashMap<Uuid, u32>>>,
     pub dimension_codec: DimensionCodec,
     pub recipes: Vec<Recipe>,
+    pub tags: Tags,
 }
 
 impl ServerData {
@@ -45,6 +71,7 @@ impl ServerData {
             player_eids: Arc::new(RwLock::new(HashMap::new())),
             dimension_codec,
             recipes: Self::load_recipes(),
+            tags: Self::load_tags(),
         }
     }
 
@@ -145,5 +172,14 @@ impl ServerData {
                 )
             }
         ]
+    }
+
+    fn load_tags() -> Tags {
+        Tags {
+            block_tags: vec![],
+            item_tags: vec![],
+            fluid_tags: vec![],
+            entity_tags: vec![]
+        }
     }
 }

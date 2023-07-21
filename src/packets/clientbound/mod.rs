@@ -14,6 +14,7 @@ pub mod change_difficulty;
 pub mod player_abilities;
 pub mod declare_recipes;
 pub mod unlock_recipes;
+pub mod tags;
 
 pub use chat_message::*;
 pub use held_item_change::*;
@@ -31,6 +32,7 @@ pub use change_difficulty::*;
 pub use player_abilities::*;
 pub use declare_recipes::*;
 pub use unlock_recipes::*;
+pub use tags::*;
 
 use super::packet_writer::PacketWriter;
 
@@ -52,6 +54,7 @@ pub enum ClientboundPacket {
     PlayerAbilities(PlayerAbilitiesPacket),
     DeclareRecipes(DeclareRecipesPacket),
     UnlockRecipes(UnlockRecipesPacket),
+    Tags(TagsPacket),
 }
 
 pub trait Clientbound {
@@ -77,6 +80,7 @@ impl Clientbound for ClientboundPacket {
             ClientboundPacket::PlayerAbilities(p) => p.writer(),
             ClientboundPacket::DeclareRecipes(p) => p.writer(),
             ClientboundPacket::UnlockRecipes(p) => p.writer(),
+            ClientboundPacket::Tags(p) => p.writer(),
         }
     }
 }

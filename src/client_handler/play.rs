@@ -72,7 +72,9 @@ impl ConnectionStateTrait for PlayState {
                     recipes: server_lock.recipes.clone(),
                 }));
 
-                // TODO: Tags
+                // Send tags
+                // queue.push(ClientboundPacket::Tags(TagsPacket::from_tags(&server_lock.tags)));
+
                 // TODO: Entity Status
                 // TODO: Commands
 
