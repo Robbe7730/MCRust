@@ -87,7 +87,11 @@ impl ConnectionStateTrait for PlayState {
                     }
                 }));
 
-                // TODO: Commands
+                // Send commands
+                queue.push(ClientboundPacket::DeclareCommands(DeclareCommandsPacket{
+                    nodes: server_lock.command_nodes.clone(),
+                    root_node: server_lock.command_root_node,
+                }));
 
                 // TEMP: unlock all exisiting recipes
                 player.unlocked_recipes = server_lock.recipes.iter().map(|r| r.id.clone()).collect();

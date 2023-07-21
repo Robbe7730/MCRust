@@ -4,6 +4,8 @@ mod dimension_codec;
 mod entity;
 mod server_settings;
 mod recipe;
+mod command;
+mod command_parser;
 
 pub use biome::*;
 pub use dimension::*;
@@ -11,6 +13,7 @@ pub use dimension_codec::*;
 pub use entity::*;
 pub use server_settings::*;
 pub use recipe::*;
+pub use command::*;
 
 use crate::error_type::ErrorType;
 use crate::nbt::NBTTag;
@@ -55,6 +58,8 @@ pub struct ServerData {
     pub dimension_codec: DimensionCodec,
     pub recipes: Vec<Recipe>,
     pub tags: Tags,
+    pub command_nodes: Vec<CommandNode>,
+    pub command_root_node: i32,
 }
 
 impl ServerData {
@@ -66,12 +71,17 @@ impl ServerData {
 
         let only_biome = Biome::dummy();
         dimension_codec.add_biome(only_biome);
+
+        let (command_nodes, command_root_node) = Self::load_commands();
+
         Self {
             settings: ServerSettings::dummy(),
             player_eids: Arc::new(RwLock::new(HashMap::new())),
             dimension_codec,
             recipes: Self::load_recipes(),
             tags: Self::load_tags(),
+            command_nodes,
+            command_root_node,
         }
     }
 
@@ -182,5 +192,18 @@ impl ServerData {
             fluid_tags: vec![],
             entity_tags: vec![]
         }
+    }
+
+    fn load_commands() -> (Vec<CommandNode>, i32) {
+        return (
+            vec![
+                CommandNode::Root(false, vec![1, 2], None),
+                CommandNode::Literal(true, vec![], None, "test".to_string()),
+                CommandNode::Literal(false, vec![3], None, "command".to_string()),
+                CommandNode::Argument(true, vec![4], None, "argument".to_string(), CommandParserType::MinecraftColor(), None),
+                CommandNode::Argument(true, vec![], None, "argument2".to_string(), CommandParserType::BrigadierInteger(Some(0), Some(10)), None)
+            ],
+            0
+        );
     }
 }
